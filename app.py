@@ -1,0 +1,258 @@
+import os, sqlite3, secrets, hmac, hashlib, re
+from datetime import datetime, timezone
+from pathlib import Path
+from urllib.parse import quote
+from dotenv import load_dotenv
+from fastapi import FastAPI, Request, Form, HTTPException
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from starlette.middleware.sessions import SessionMiddleware
+
+load_dotenv()
+ROOT = Path(__file__).parent
+DB_PATH = os.getenv("DATABASE_PATH", str(ROOT / "ifarmer.db"))
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
+SECRET_KEY = os.getenv("SECRET_KEY", "")
+COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"
+
+app = FastAPI(title="iFarmer", docs_url=None, redoc_url=None)
+if not SECRET_KEY:
+    # For local development only. Configure a stable secret in .env for deployment.
+    SECRET_KEY = secrets.token_urlsafe(48)
+app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY, same_site="lax", https_only=COOKIE_SECURE)
+app.mount("/static", StaticFiles(directory=str(ROOT / "static")), name="static")
+
+FORBIDDEN = [
+    "gme agro", "gmeagro", "জিএমই এগ্রো", "জিএমই এগ্রো লিঃ",
+    "জিএমই এগ্রো লিমিটেড", "gme agro limited", "gme group"
+]
+
+def now():
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+def db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def init_db():
+    with db() as c:
+        c.execute("""CREATE TABLE IF NOT EXISTS orders(
+            id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, phone TEXT NOT NULL,
+            address TEXT NOT NULL, product TEXT NOT NULL, quantity TEXT NOT NULL,
+            payment TEXT NOT NULL, notes TEXT DEFAULT '', status TEXT NOT NULL DEFAULT 'নতুন',
+            created_at TEXT NOT NULL)""")
+        c.execute("""CREATE TABLE IF NOT EXISTS partner_requests(
+            id INTEGER PRIMARY KEY AUTOINCREMENT, shop_name TEXT NOT NULL, owner_name TEXT NOT NULL,
+            phone TEXT NOT NULL, email TEXT DEFAULT '', subdomain TEXT NOT NULL UNIQUE,
+            area TEXT NOT NULL, description TEXT DEFAULT '', status TEXT NOT NULL DEFAULT 'অপেক্ষমাণ',
+            created_at TEXT NOT NULL)""")
+        c.execute("""CREATE TABLE IF NOT EXISTS audit(
+            id INTEGER PRIMARY KEY AUTOINCREMENT, actor TEXT NOT NULL, action TEXT NOT NULL,
+            item_type TEXT NOT NULL, item_id INTEGER, created_at TEXT NOT NULL)""")
+init_db()
+
+def log_action(actor, action, item_type, item_id=None):
+    with db() as c:
+        c.execute("INSERT INTO audit(actor,action,item_type,item_id,created_at) VALUES(?,?,?,?,?)",
+                  (actor, action, item_type, item_id, now()))
+
+def clean(s, maxlen=300):
+    return re.sub(r"\s+", " ", (s or "").strip())[:maxlen]
+
+def contains_forbidden(*values):
+    text = " ".join(values).lower()
+    return any(x.lower() in text for x in FORBIDDEN)
+
+def esc(s):
+    import html
+    return html.escape(str(s or ""))
+
+def page(title, body, active=""):
+    return f"""<!doctype html><html lang="bn"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#176b45"><title>{esc(title)} · iFarmer</title>
+<link rel="stylesheet" href="/static/style.css"></head><body>
+<header class="top"><a class="brand" href="/"><span class="logo">🌱</span><span>iFarmer</span></a>
+<nav><a href="/#products">পণ্য</a><a href="/#order">অর্ডার</a><a href="/partner">পার্টনার হোন</a></nav></header>
+{body}
+<footer><b>iFarmer</b><p>কৃষির ডিজিটাল সহযাত্রী</p><div><a href="/privacy">গোপনীয়তা</a> · <a href="/terms">শর্তাবলি</a> · <a href="/admin">মালিক লগইন</a></div>
+<small>© {datetime.now().year} iFarmer</small></footer></body></html>"""
+
+@app.get("/", response_class=HTMLResponse)
+def home():
+    body = """
+<main>
+<section class="hero">
+<div class="pill">কৃষির ডিজিটাল সহযাত্রী</div><h1>কৃষি পণ্য ও সেবা,<br><span>এখন আরও সহজে</span></h1>
+<p>কৃষকের প্রয়োজনীয় পণ্য খুঁজুন, অর্ডারের অনুরোধ পাঠান এবং স্থানীয় কৃষি সেবার সঙ্গে যুক্ত থাকুন।</p>
+<div class="actions"><a class="btn primary" href="#order">অর্ডার করুন</a><a class="btn light" href="/partner">পার্টনার হোন</a></div>
+<div class="hero-note">সহজ অর্ডার · ফোনে নিশ্চিতকরণ · ডেলিভারির নিয়ম বিক্রেতার সঙ্গে নিশ্চিত করুন</div>
+</section>
+<section class="stats"><div><b>🌾</b><span>কৃষি পণ্য</span></div><div><b>🛒</b><span>সহজ অর্ডার</span></div><div><b>📞</b><span>ফোনে নিশ্চিতকরণ</span></div><div><b>🏪</b><span>স্থানীয় পার্টনার</span></div></section>
+<section id="products" class="section"><div class="section-head"><div><div class="eyebrow">iFarmer মার্কেটপ্লেস</div><h2>কৃষির প্রয়োজনীয় সেবা</h2></div><p>পণ্যের প্রাপ্যতা, দাম ও ব্যবহার বিক্রেতার সঙ্গে নিশ্চিত করুন।</p></div>
+<div class="cards">
+<article class="card"><div class="card-icon">🌱</div><h3>ফসলের যত্ন</h3><p>ফসলভিত্তিক পণ্য ও পরিচর্যা-সংক্রান্ত তথ্যের সহায়তা।</p></article>
+<article class="card"><div class="card-icon">🧺</div><h3>বীজ ও কৃষি উপকরণ</h3><p>আপনার প্রয়োজন জানিয়ে অর্ডারের অনুরোধ পাঠান।</p></article>
+<article class="card"><div class="card-icon">🚚</div><h3>ডেলিভারি</h3><p>এলাকা ও ডেলিভারি শর্ত ফোনে নিশ্চিত করুন।</p></article>
+</div></section>
+<section id="order" class="section order-section"><div class="section-head"><div><div class="eyebrow">অর্ডার রিকোয়েস্ট</div><h2>আপনার অর্ডারের তথ্য দিন</h2></div><p>ফর্ম পাঠানোর পর বিক্রেতা আপনার সঙ্গে যোগাযোগ করবেন।</p></div>
+<form class="form card" method="post" action="/order">
+<div class="form-grid">
+<label>আপনার নাম<input name="name" required maxlength="100" placeholder="পূর্ণ নাম"></label>
+<label>মোবাইল নম্বর<input name="phone" required inputmode="tel" maxlength="30" placeholder="01XXXXXXXXX"></label>
+<label>পণ্যের নাম<input name="product" required maxlength="160" placeholder="যে পণ্য প্রয়োজন"></label>
+<label>পরিমাণ<input name="quantity" required maxlength="80" placeholder="যেমন: ৫ প্যাকেট"></label>
+<label class="wide">ডেলিভারি ঠিকানা<input name="address" required maxlength="300" placeholder="গ্রাম, বাজার, উপজেলা, জেলা"></label>
+<label>পেমেন্ট পদ্ধতি<select name="payment"><option value="ক্যাশ অন ডেলিভারি">ক্যাশ অন ডেলিভারি (অনুরোধ)</option><option value="ফোনে আলোচনা">ফোনে আলোচনা করে ঠিক করব</option></select></label>
+<label>অতিরিক্ত তথ্য<input name="notes" maxlength="300" placeholder="ঐচ্ছিক"></label>
+</div><button class="btn primary" type="submit">অর্ডারের অনুরোধ পাঠান →</button>
+<p class="fine">এটি অর্ডারের অনুরোধ; ফোনে মূল্য, পণ্য, প্রাপ্যতা ও ডেলিভারি নিশ্চিত হওয়ার পর অর্ডার চূড়ান্ত হবে।</p>
+</form></section>
+<section class="partner-banner"><div><div class="eyebrow">স্থানীয় ব্যবসার জন্য</div><h2>iFarmer পার্টনার নেটওয়ার্কে যোগ দিন</h2><p>দোকানের তথ্য জমা দিন। প্রতিটি পার্টনার অনুরোধ মালিকের অনুমোদনের জন্য অপেক্ষা করবে।</p></div><a class="btn light" href="/partner">আবেদন করুন</a></section>
+</main>"""
+    return page("কৃষি পণ্য ও সেবা", body)
+
+@app.post("/order", response_class=HTMLResponse)
+def create_order(name: str=Form(...), phone: str=Form(...), address: str=Form(...),
+                 product: str=Form(...), quantity: str=Form(...),
+                 payment: str=Form("ক্যাশ অন ডেলিভারি"), notes: str=Form("")):
+    vals = [clean(name,100), clean(phone,30), clean(address,300), clean(product,160),
+            clean(quantity,80), clean(payment,50), clean(notes,300)]
+    if contains_forbidden(*vals):
+        raise HTTPException(400, "এই ব্র্যান্ডের নাম iFarmer-এ অনুমোদিত নয়।")
+    if not vals[0] or not vals[1] or not vals[2] or not vals[3] or not vals[4]:
+        raise HTTPException(400, "প্রয়োজনীয় তথ্য পূরণ করুন।")
+    with db() as c:
+        cur = c.execute("""INSERT INTO orders(name,phone,address,product,quantity,payment,notes,created_at)
+        VALUES(?,?,?,?,?,?,?,?)""", (*vals, now()))
+        oid = cur.lastrowid
+    log_action("public", "order_created", "order", oid)
+    body = f"""<main class="narrow"><section class="success"><div class="success-icon">✓</div><h1>অর্ডারের অনুরোধ গ্রহণ করা হয়েছে</h1>
+<p>আপনার অনুরোধ নম্বর <b>IF-{oid:05d}</b>। বিক্রেতা ফোনে যোগাযোগ করে তথ্য নিশ্চিত করতে পারেন।</p>
+<p>পণ্য, মূল্য ও ডেলিভারি নিশ্চিত না হওয়া পর্যন্ত অর্ডার চূড়ান্ত নয়।</p><a class="btn primary" href="/">হোমে ফিরে যান</a></section></main>"""
+    return page("অর্ডার গ্রহণ", body)
+
+@app.get("/partner", response_class=HTMLResponse)
+def partner():
+    body = """<main class="narrow"><section class="section-head"><div><div class="eyebrow">iFarmer পার্টনার</div><h1>দোকান/পার্টনার সাইটের আবেদন</h1></div><p>আবেদন জমা দিলে মালিক যাচাই করে অনুমোদন বা বাতিল করবেন। অনুমোদন নিজে থেকে সাবডোমেইন চালু করে না।</p></section>
+<form class="form card" method="post" action="/partner">
+<div class="form-grid">
+<label>দোকানের নাম<input name="shop_name" required maxlength="140"></label>
+<label>মালিক/যোগাযোগ ব্যক্তির নাম<input name="owner_name" required maxlength="100"></label>
+<label>মোবাইল নম্বর<input name="phone" required maxlength="30" inputmode="tel"></label>
+<label>ইমেইল (ঐচ্ছিক)<input name="email" type="email" maxlength="160"></label>
+<label>প্রস্তাবিত সাবডোমেইন নাম<input name="subdomain" required maxlength="50" pattern="[a-zA-Z0-9-]{3,50}" placeholder="যেমন: rahim-agro"></label>
+<label>এলাকা<input name="area" required maxlength="200" placeholder="বাজার, উপজেলা, জেলা"></label>
+<label class="wide">ব্যবসার সংক্ষিপ্ত বিবরণ<textarea name="description" maxlength="400"></textarea></label>
+</div><button class="btn primary" type="submit">অনুমোদনের জন্য পাঠান</button>
+<p class="fine">শুধু ইংরেজি অক্ষর, সংখ্যা ও হাইফেন দিয়ে সাবডোমেইন লিখুন। অনুমোদনের পর ডোমেইন/DNS সেটআপ আলাদাভাবে প্রয়োজন হবে।</p>
+</form></main>"""
+    return page("পার্টনার আবেদন", body)
+
+@app.post("/partner", response_class=HTMLResponse)
+def create_partner(shop_name: str=Form(...), owner_name: str=Form(...), phone: str=Form(...),
+                   email: str=Form(""), subdomain: str=Form(...), area: str=Form(...), description: str=Form("")):
+    vals = [clean(shop_name,140), clean(owner_name,100), clean(phone,30), clean(email,160),
+            clean(subdomain,50).lower(), clean(area,200), clean(description,400)]
+    if contains_forbidden(*vals):
+        raise HTTPException(400, "এই ব্র্যান্ডের নাম iFarmer-এ অনুমোদিত নয়।")
+    if not re.fullmatch(r"[a-z0-9](?:[a-z0-9-]{1,48}[a-z0-9])", vals[4]):
+        raise HTTPException(400, "সাবডোমেইন ৩-৫০ অক্ষরের হতে হবে; ইংরেজি ছোট হাতের অক্ষর, সংখ্যা ও হাইফেন ব্যবহার করুন।")
+    try:
+        with db() as c:
+            cur = c.execute("""INSERT INTO partner_requests(shop_name,owner_name,phone,email,subdomain,area,description,created_at)
+            VALUES(?,?,?,?,?,?,?,?)""", (*vals, now()))
+            pid = cur.lastrowid
+    except sqlite3.IntegrityError:
+        raise HTTPException(409, "এই সাবডোমেইন নাম আগে থেকেই আবেদন করা হয়েছে।")
+    log_action("public", "partner_request_created", "partner", pid)
+    body = f"""<main class="narrow"><section class="success"><div class="success-icon">✓</div><h1>আবেদন জমা হয়েছে</h1><p>আবেদন নম্বর <b>IP-{pid:05d}</b>। স্ট্যাটাস: অপেক্ষমাণ। মালিক অনুমোদন না দেওয়া পর্যন্ত সাইট চালু হবে না।</p><a class="btn primary" href="/">হোমে ফিরে যান</a></section></main>"""
+    return page("আবেদন জমা", body)
+
+def require_admin(request: Request):
+    if not request.session.get("admin"):
+        return False
+    return True
+
+@app.get("/admin", response_class=HTMLResponse)
+def admin_login(request: Request):
+    if require_admin(request):
+        return RedirectResponse("/admin/dashboard", status_code=303)
+    body = """<main class="narrow"><section class="section-head"><div><div class="eyebrow">নিরাপদ প্রবেশ</div><h1>মালিক / সুপার অ্যাডমিন লগইন</h1></div></section>
+<form class="form card" method="post" action="/admin/login"><label>ইউজারনেম<input name="username" required autocomplete="username"></label>
+<label>পাসওয়ার্ড<input name="password" required type="password" autocomplete="current-password"></label>
+<button class="btn primary" type="submit">লগইন</button><p class="fine">অ্যাডমিন লগইন `.env` ফাইলের credentials দিয়ে নিয়ন্ত্রিত হয়।</p></form></main>"""
+    return page("মালিক লগইন", body)
+
+@app.post("/admin/login")
+def admin_login_post(request: Request, username: str=Form(...), password: str=Form(...)):
+    if not ADMIN_USERNAME or not ADMIN_PASSWORD:
+        raise HTTPException(503, "অ্যাডমিন credentials সেট করা নেই। `.env` ফাইল পূরণ করুন।")
+    ok = hmac.compare_digest(username, ADMIN_USERNAME) and hmac.compare_digest(password, ADMIN_PASSWORD)
+    if not ok:
+        log_action("unknown", "admin_login_failed", "auth", None)
+        raise HTTPException(401, "ইউজারনেম বা পাসওয়ার্ড সঠিক নয়।")
+    request.session.clear()
+    request.session["admin"] = ADMIN_USERNAME
+    log_action(ADMIN_USERNAME, "admin_login", "auth", None)
+    return RedirectResponse("/admin/dashboard", status_code=303)
+
+@app.post("/admin/logout")
+def admin_logout(request: Request):
+    actor = request.session.get("admin", "unknown")
+    request.session.clear()
+    log_action(actor, "admin_logout", "auth", None)
+    return RedirectResponse("/admin", status_code=303)
+
+@app.get("/admin/dashboard", response_class=HTMLResponse)
+def dashboard(request: Request):
+    if not require_admin(request):
+        return RedirectResponse("/admin", status_code=303)
+    with db() as c:
+        orders = c.execute("SELECT * FROM orders ORDER BY id DESC LIMIT 100").fetchall()
+        partners = c.execute("SELECT * FROM partner_requests ORDER BY id DESC LIMIT 100").fetchall()
+        audits = c.execute("SELECT * FROM audit ORDER BY id DESC LIMIT 40").fetchall()
+    def order_row(r):
+        return f"""<tr><td>IF-{r['id']:05d}<br><small>{esc(r['created_at'])}</small></td><td><b>{esc(r['name'])}</b><br>{esc(r['phone'])}<br>{esc(r['address'])}</td><td>{esc(r['product'])}<br>পরিমাণ: {esc(r['quantity'])}<br>{esc(r['payment'])}<br><small>{esc(r['notes'])}</small></td><td><form method="post" action="/admin/order-status"><input type="hidden" name="order_id" value="{r['id']}"><select name="status">{''.join(f'<option {"selected" if r["status"]==s else ""}>{s}</option>' for s in ["নতুন","ফোনে যোগাযোগ করতে হবে","নিশ্চিত","প্রসেসিং","ডেলিভারির পথে","সম্পন্ন","বাতিল"])}</select><button class="mini">আপডেট</button></form></td></tr>"""
+    def partner_row(r):
+        return f"""<tr><td>IP-{r['id']:05d}<br><small>{esc(r['created_at'])}</small></td><td><b>{esc(r['shop_name'])}</b><br>{esc(r['owner_name'])}<br>{esc(r['phone'])}<br>{esc(r['email'])}</td><td><code>{esc(r['subdomain'])}</code><br>{esc(r['area'])}<br><small>{esc(r['description'])}</small></td><td><b>{esc(r['status'])}</b><form method="post" action="/admin/partner-status"><input type="hidden" name="partner_id" value="{r['id']}"><select name="status">{''.join(f'<option {"selected" if r["status"]==s else ""}>{s}</option>' for s in ["অপেক্ষমাণ","অনুমোদিত","বাতিল","স্থগিত"])}</select><button class="mini">সিদ্ধান্ত সেভ</button></form></td></tr>"""
+    body = f"""<main class="admin-main"><div class="admin-head"><div><div class="eyebrow">OWNER CONTROL</div><h1>সুপার অ্যাডমিন ড্যাশবোর্ড</h1><p>লগইন: {esc(request.session.get('admin'))}</p></div><form method="post" action="/admin/logout"><button class="btn light">লগআউট</button></form></div>
+<div class="stats admin-stats"><div><b>{len(orders)}</b><span>সাম্প্রতিক অর্ডার</span></div><div><b>{len(partners)}</b><span>পার্টনার আবেদন</span></div><div><b>{sum(1 for r in partners if r['status']=='অপেক্ষমাণ')}</b><span>অনুমোদনের অপেক্ষায়</span></div></div>
+<section class="admin-section"><h2>অর্ডার ব্যবস্থাপনা</h2><div class="table-wrap"><table><thead><tr><th>নম্বর / সময়</th><th>ক্রেতা</th><th>অর্ডার</th><th>স্ট্যাটাস</th></tr></thead><tbody>{''.join(order_row(r) for r in orders) or '<tr><td colspan="4">এখনো কোনো অর্ডার নেই।</td></tr>'}</tbody></table></div></section>
+<section class="admin-section"><h2>পার্টনার সাইট অনুমোদন</h2><div class="table-wrap"><table><thead><tr><th>আবেদন</th><th>দোকান/যোগাযোগ</th><th>সাবডোমেইন/এলাকা</th><th>সিদ্ধান্ত</th></tr></thead><tbody>{''.join(partner_row(r) for r in partners) or '<tr><td colspan="4">এখনো কোনো আবেদন নেই।</td></tr>'}</tbody></table></div><p class="fine">স্ট্যাটাস অনুমোদিত করলেও DNS বা সাবডোমেইন স্বয়ংক্রিয়ভাবে তৈরি হয় না।</p></section>
+<section class="admin-section"><h2>সাম্প্রতিক কার্যকলাপ</h2><div class="table-wrap"><table><thead><tr><th>সময়</th><th>ব্যবহারকারী</th><th>কাজ</th><th>বিষয়</th></tr></thead><tbody>{''.join(f"<tr><td>{esc(r['created_at'])}</td><td>{esc(r['actor'])}</td><td>{esc(r['action'])}</td><td>{esc(r['item_type'])} {esc(r['item_id'])}</td></tr>" for r in audits) or '<tr><td colspan="4">কোনো লগ নেই।</td></tr>'}</tbody></table></div></section></main>"""
+    return page("সুপার অ্যাডমিন", body)
+
+@app.post("/admin/order-status")
+def order_status(request: Request, order_id: int=Form(...), status: str=Form(...)):
+    if not require_admin(request):
+        raise HTTPException(401, "লগইন প্রয়োজন।")
+    allowed = ["নতুন","ফোনে যোগাযোগ করতে হবে","নিশ্চিত","প্রসেসিং","ডেলিভারির পথে","সম্পন্ন","বাতিল"]
+    if status not in allowed: raise HTTPException(400, "অবৈধ স্ট্যাটাস।")
+    with db() as c:
+        cur = c.execute("UPDATE orders SET status=? WHERE id=?", (status, order_id))
+        if not cur.rowcount: raise HTTPException(404, "অর্ডার পাওয়া যায়নি।")
+    log_action(request.session["admin"], "order_status:"+status, "order", order_id)
+    return RedirectResponse("/admin/dashboard", status_code=303)
+
+@app.post("/admin/partner-status")
+def partner_status(request: Request, partner_id: int=Form(...), status: str=Form(...)):
+    if not require_admin(request):
+        raise HTTPException(401, "লগইন প্রয়োজন।")
+    allowed = ["অপেক্ষমাণ","অনুমোদিত","বাতিল","স্থগিত"]
+    if status not in allowed: raise HTTPException(400, "অবৈধ স্ট্যাটাস।")
+    with db() as c:
+        cur = c.execute("UPDATE partner_requests SET status=? WHERE id=?", (status, partner_id))
+        if not cur.rowcount: raise HTTPException(404, "আবেদন পাওয়া যায়নি।")
+    log_action(request.session["admin"], "partner_status:"+status, "partner", partner_id)
+    return RedirectResponse("/admin/dashboard", status_code=303)
+
+@app.get("/privacy", response_class=HTMLResponse)
+def privacy():
+    return page("গোপনীয়তা", """<main class="narrow section"><h1>গোপনীয়তা নীতি</h1><p>এই স্টার্টার সাইটে জমা দেওয়া অর্ডার ও পার্টনার আবেদন স্থানীয় SQLite ডেটাবেসে সংরক্ষিত হয়। লাইভ করার আগে ডেটা ব্যবহারের উদ্দেশ্য, সংরক্ষণকাল, যোগাযোগের তথ্য এবং ব্যবহারকারীর অধিকার নিয়ে পূর্ণ নীতি প্রকাশ করুন।</p><p>এটি আইনি পরামর্শ নয়।</p></main>""")
+
+@app.get("/terms", response_class=HTMLResponse)
+def terms():
+    return page("শর্তাবলি", """<main class="narrow section"><h1>ব্যবহারের শর্তাবলি</h1><p>অর্ডারের অনুরোধ চূড়ান্ত বিক্রয় নয়। পণ্যের প্রাপ্যতা, মূল্য, ডেলিভারি, পেমেন্ট ও ফেরতের শর্ত বিক্রেতার সঙ্গে নিশ্চিত করতে হবে। কৃষি উপকরণ ব্যবহারে পণ্যের লেবেল ও প্রযোজ্য আইন অনুসরণ করুন। লাইভ করার আগে আপনার ব্যবসার উপযোগী পূর্ণ শর্তাবলি যুক্ত করুন।</p></main>""")
