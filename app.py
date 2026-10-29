@@ -1,4 +1,6 @@
 import os, sqlite3, secrets, hmac, hashlib, re
+import psycopg
+from psycopg.rows import dict_row
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import quote
@@ -11,6 +13,7 @@ from starlette.middleware.sessions import SessionMiddleware
 load_dotenv()
 ROOT = Path(__file__).parent
 DB_PATH = os.getenv("DATABASE_PATH", str(ROOT / "ifarmer.db"))
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 SECRET_KEY = os.getenv("SECRET_KEY", "")
@@ -32,30 +35,37 @@ def now():
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 def db():
+    # Keep SQLite as a local/fallback database until DATABASE_URL is configured.
+    if DATABASE_URL:
+        return psycopg.connect(DATABASE_URL, row_factory=dict_row, connect_timeout=10)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
+def sql_placeholders(sql):
+    return sql.replace("?", "%s") if DATABASE_URL else sql
+
 def init_db():
+    primary_key = "SERIAL PRIMARY KEY" if DATABASE_URL else "INTEGER PRIMARY KEY AUTOINCREMENT"
     with db() as c:
-        c.execute("""CREATE TABLE IF NOT EXISTS orders(
-            id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, phone TEXT NOT NULL,
+        c.execute(f"""CREATE TABLE IF NOT EXISTS orders(
+            id {primary_key}, name TEXT NOT NULL, phone TEXT NOT NULL,
             address TEXT NOT NULL, product TEXT NOT NULL, quantity TEXT NOT NULL,
             payment TEXT NOT NULL, notes TEXT DEFAULT '', status TEXT NOT NULL DEFAULT 'নতুন',
             created_at TEXT NOT NULL)""")
-        c.execute("""CREATE TABLE IF NOT EXISTS partner_requests(
-            id INTEGER PRIMARY KEY AUTOINCREMENT, shop_name TEXT NOT NULL, owner_name TEXT NOT NULL,
+        c.execute(f"""CREATE TABLE IF NOT EXISTS partner_requests(
+            id {primary_key}, shop_name TEXT NOT NULL, owner_name TEXT NOT NULL,
             phone TEXT NOT NULL, email TEXT DEFAULT '', subdomain TEXT NOT NULL UNIQUE,
             area TEXT NOT NULL, description TEXT DEFAULT '', status TEXT NOT NULL DEFAULT 'অপেক্ষমাণ',
             created_at TEXT NOT NULL)""")
-        c.execute("""CREATE TABLE IF NOT EXISTS audit(
-            id INTEGER PRIMARY KEY AUTOINCREMENT, actor TEXT NOT NULL, action TEXT NOT NULL,
+        c.execute(f"""CREATE TABLE IF NOT EXISTS audit(
+            id {primary_key}, actor TEXT NOT NULL, action TEXT NOT NULL,
             item_type TEXT NOT NULL, item_id INTEGER, created_at TEXT NOT NULL)""")
 init_db()
 
 def log_action(actor, action, item_type, item_id=None):
     with db() as c:
-        c.execute("INSERT INTO audit(actor,action,item_type,item_id,created_at) VALUES(?,?,?,?,?)",
+        c.execute(sql_placeholders("INSERT INTO audit(actor,action,item_type,item_id,created_at) VALUES(?,?,?,?,?)"),
                   (actor, action, item_type, item_id, now()))
 
 def clean(s, maxlen=300):
@@ -125,9 +135,9 @@ def create_order(name: str=Form(...), phone: str=Form(...), address: str=Form(..
     if not vals[0] or not vals[1] or not vals[2] or not vals[3] or not vals[4]:
         raise HTTPException(400, "প্রয়োজনীয় তথ্য পূরণ করুন।")
     with db() as c:
-        cur = c.execute("""INSERT INTO orders(name,phone,address,product,quantity,payment,notes,created_at)
-        VALUES(?,?,?,?,?,?,?,?)""", (*vals, now()))
-        oid = cur.lastrowid
+        cur = c.execute(sql_placeholders("""INSERT INTO orders(name,phone,address,product,quantity,payment,notes,created_at)
+        VALUES(?,?,?,?,?,?,?,?)""") + (" RETURNING id" if DATABASE_URL else ""), (*vals, now()))
+        oid = cur.fetchone()["id"] if DATABASE_URL else cur.lastrowid
     log_action("public", "order_created", "order", oid)
     body = f"""<main class="narrow"><section class="success"><div class="success-icon">✓</div><h1>অর্ডারের অনুরোধ গ্রহণ করা হয়েছে</h1>
 <p>আপনার অনুরোধ নম্বর <b>IF-{oid:05d}</b>। বিক্রেতা ফোনে যোগাযোগ করে তথ্য নিশ্চিত করতে পারেন।</p>
@@ -162,10 +172,10 @@ def create_partner(shop_name: str=Form(...), owner_name: str=Form(...), phone: s
         raise HTTPException(400, "সাবডোমেইন ৩-৫০ অক্ষরের হতে হবে; ইংরেজি ছোট হাতের অক্ষর, সংখ্যা ও হাইফেন ব্যবহার করুন।")
     try:
         with db() as c:
-            cur = c.execute("""INSERT INTO partner_requests(shop_name,owner_name,phone,email,subdomain,area,description,created_at)
-            VALUES(?,?,?,?,?,?,?,?)""", (*vals, now()))
-            pid = cur.lastrowid
-    except sqlite3.IntegrityError:
+            cur = c.execute(sql_placeholders("""INSERT INTO partner_requests(shop_name,owner_name,phone,email,subdomain,area,description,created_at)
+            VALUES(?,?,?,?,?,?,?,?)""") + (" RETURNING id" if DATABASE_URL else ""), (*vals, now()))
+            pid = cur.fetchone()["id"] if DATABASE_URL else cur.lastrowid
+    except (sqlite3.IntegrityError, psycopg.errors.UniqueViolation):
         raise HTTPException(409, "এই সাবডোমেইন নাম আগে থেকেই আবেদন করা হয়েছে।")
     log_action("public", "partner_request_created", "partner", pid)
     body = f"""<main class="narrow"><section class="success"><div class="success-icon">✓</div><h1>আবেদন জমা হয়েছে</h1><p>আবেদন নম্বর <b>IP-{pid:05d}</b>। স্ট্যাটাস: অপেক্ষমাণ। মালিক অনুমোদন না দেওয়া পর্যন্ত সাইট চালু হবে না।</p><a class="btn primary" href="/">হোমে ফিরে যান</a></section></main>"""
@@ -232,7 +242,7 @@ def order_status(request: Request, order_id: int=Form(...), status: str=Form(...
     allowed = ["নতুন","ফোনে যোগাযোগ করতে হবে","নিশ্চিত","প্রসেসিং","ডেলিভারির পথে","সম্পন্ন","বাতিল"]
     if status not in allowed: raise HTTPException(400, "অবৈধ স্ট্যাটাস।")
     with db() as c:
-        cur = c.execute("UPDATE orders SET status=? WHERE id=?", (status, order_id))
+        cur = c.execute(sql_placeholders("UPDATE orders SET status=? WHERE id=?"), (status, order_id))
         if not cur.rowcount: raise HTTPException(404, "অর্ডার পাওয়া যায়নি।")
     log_action(request.session["admin"], "order_status:"+status, "order", order_id)
     return RedirectResponse("/admin/dashboard", status_code=303)
@@ -244,7 +254,7 @@ def partner_status(request: Request, partner_id: int=Form(...), status: str=Form
     allowed = ["অপেক্ষমাণ","অনুমোদিত","বাতিল","স্থগিত"]
     if status not in allowed: raise HTTPException(400, "অবৈধ স্ট্যাটাস।")
     with db() as c:
-        cur = c.execute("UPDATE partner_requests SET status=? WHERE id=?", (status, partner_id))
+        cur = c.execute(sql_placeholders("UPDATE partner_requests SET status=? WHERE id=?"), (status, partner_id))
         if not cur.rowcount: raise HTTPException(404, "আবেদন পাওয়া যায়নি।")
     log_action(request.session["admin"], "partner_status:"+status, "partner", partner_id)
     return RedirectResponse("/admin/dashboard", status_code=303)
