@@ -61,6 +61,11 @@ def init_db():
         c.execute(f"""CREATE TABLE IF NOT EXISTS audit(
             id {primary_key}, actor TEXT NOT NULL, action TEXT NOT NULL,
             item_type TEXT NOT NULL, item_id INTEGER, created_at TEXT NOT NULL)""")
+        c.execute(f"""CREATE TABLE IF NOT EXISTS partner_sites(
+            id {primary_key}, partner_request_id INTEGER NOT NULL UNIQUE,
+            shop_name TEXT NOT NULL, owner_name TEXT NOT NULL, phone TEXT NOT NULL,
+            subdomain TEXT NOT NULL UNIQUE, area TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'সক্রিয়', created_at TEXT NOT NULL)""")
 init_db()
 
 def log_action(actor, action, item_type, item_id=None):
@@ -223,15 +228,19 @@ def dashboard(request: Request):
     with db() as c:
         orders = c.execute("SELECT * FROM orders ORDER BY id DESC LIMIT 100").fetchall()
         partners = c.execute("SELECT * FROM partner_requests ORDER BY id DESC LIMIT 100").fetchall()
+        sites = c.execute("SELECT * FROM partner_sites ORDER BY id DESC LIMIT 100").fetchall()
         audits = c.execute("SELECT * FROM audit ORDER BY id DESC LIMIT 40").fetchall()
     def order_row(r):
         return f"""<tr><td>IF-{r['id']:05d}<br><small>{esc(r['created_at'])}</small></td><td><b>{esc(r['name'])}</b><br>{esc(r['phone'])}<br>{esc(r['address'])}</td><td>{esc(r['product'])}<br>পরিমাণ: {esc(r['quantity'])}<br>{esc(r['payment'])}<br><small>{esc(r['notes'])}</small></td><td><form method="post" action="/admin/order-status"><input type="hidden" name="order_id" value="{r['id']}"><select name="status">{''.join(f'<option {"selected" if r["status"]==s else ""}>{s}</option>' for s in ["নতুন","ফোনে যোগাযোগ করতে হবে","নিশ্চিত","প্রসেসিং","ডেলিভারির পথে","সম্পন্ন","বাতিল"])}</select><button class="mini">আপডেট</button></form></td></tr>"""
     def partner_row(r):
         return f"""<tr><td>IP-{r['id']:05d}<br><small>{esc(r['created_at'])}</small></td><td><b>{esc(r['shop_name'])}</b><br>{esc(r['owner_name'])}<br>{esc(r['phone'])}<br>{esc(r['email'])}</td><td><code>{esc(r['subdomain'])}</code><br>{esc(r['area'])}<br><small>{esc(r['description'])}</small></td><td><b>{esc(r['status'])}</b><form method="post" action="/admin/partner-status"><input type="hidden" name="partner_id" value="{r['id']}"><select name="status">{''.join(f'<option {"selected" if r["status"]==s else ""}>{s}</option>' for s in ["অপেক্ষমাণ","অনুমোদিত","বাতিল","স্থগিত"])}</select><button class="mini">সিদ্ধান্ত সেভ</button></form></td></tr>"""
+    def site_row(r):
+        return f"""<tr><td>PS-{r['id']:05d}</td><td><b>{esc(r['shop_name'])}</b><br>{esc(r['owner_name'])}<br>{esc(r['phone'])}</td><td><code>{esc(r['subdomain'])}</code><br>{esc(r['area'])}</td><td>{esc(r['status'])}<br><small>{esc(r['created_at'])}</small></td></tr>"""
     body = f"""<main class="admin-main"><div class="admin-head"><div><div class="eyebrow">OWNER CONTROL</div><h1>সুপার অ্যাডমিন ড্যাশবোর্ড</h1><p>লগইন: {esc(request.session.get('admin'))}</p></div><form method="post" action="/admin/logout"><button class="btn light">লগআউট</button></form></div>
-<div class="stats admin-stats"><div><b>{len(orders)}</b><span>সাম্প্রতিক অর্ডার</span></div><div><b>{len(partners)}</b><span>পার্টনার আবেদন</span></div><div><b>{sum(1 for r in partners if r['status']=='অপেক্ষমাণ')}</b><span>অনুমোদনের অপেক্ষায়</span></div></div>
+<div class="stats admin-stats"><div><b>{len(orders)}</b><span>সাম্প্রতিক অর্ডার</span></div><div><b>{len(partners)}</b><span>পার্টনার আবেদন</span></div><div><b>{len(sites)}</b><span>পার্টনার সাইট</span></div><div><b>{sum(1 for r in partners if r['status']=='অপেক্ষমাণ')}</b><span>অনুমোদনের অপেক্ষায়</span></div></div>
 <section class="admin-section"><h2>অর্ডার ব্যবস্থাপনা</h2><div class="table-wrap"><table><thead><tr><th>নম্বর / সময়</th><th>ক্রেতা</th><th>অর্ডার</th><th>স্ট্যাটাস</th></tr></thead><tbody>{''.join(order_row(r) for r in orders) or '<tr><td colspan="4">এখনো কোনো অর্ডার নেই।</td></tr>'}</tbody></table></div></section>
 <section class="admin-section"><h2>পার্টনার সাইট অনুমোদন</h2><div class="table-wrap"><table><thead><tr><th>আবেদন</th><th>দোকান/যোগাযোগ</th><th>সাবডোমেইন/এলাকা</th><th>সিদ্ধান্ত</th></tr></thead><tbody>{''.join(partner_row(r) for r in partners) or '<tr><td colspan="4">এখনো কোনো আবেদন নেই।</td></tr>'}</tbody></table></div><p class="fine">স্ট্যাটাস অনুমোদিত করলেও DNS বা সাবডোমেইন স্বয়ংক্রিয়ভাবে তৈরি হয় না।</p></section>
+<section class="admin-section"><h2>পার্টনার সাইট ব্যবস্থাপনা</h2><div class="table-wrap"><table><thead><tr><th>সাইট আইডি</th><th>দোকান/মালিক</th><th>সাবডোমেইন/এলাকা</th><th>অবস্থা</th></tr></thead><tbody>{''.join(site_row(r) for r in sites) or '<tr><td colspan="4">এখনো কোনো অনুমোদিত পার্টনার সাইট নেই। কোনো আবেদনকে “অনুমোদিত” করলে এখানে যুক্ত হবে।</td></tr>'}</tbody></table></div><p class="fine">এটি অনুমোদিত সাইটের তালিকা ও অবস্থা পরিচালনা করে। বাস্তবে সাবডোমেইন চালু করতে নিজস্ব ডোমেইন, DNS ও হোস্টিং কনফিগারেশন লাগবে।</p></section>
 <section class="admin-section"><h2>সাম্প্রতিক কার্যকলাপ</h2><div class="table-wrap"><table><thead><tr><th>সময়</th><th>ব্যবহারকারী</th><th>কাজ</th><th>বিষয়</th></tr></thead><tbody>{''.join(f"<tr><td>{esc(r['created_at'])}</td><td>{esc(r['actor'])}</td><td>{esc(r['action'])}</td><td>{esc(r['item_type'])} {esc(r['item_id'])}</td></tr>" for r in audits) or '<tr><td colspan="4">কোনো লগ নেই।</td></tr>'}</tbody></table></div></section></main>"""
     return page("সুপার অ্যাডমিন", body)
 
@@ -254,8 +263,22 @@ def partner_status(request: Request, partner_id: int=Form(...), status: str=Form
     allowed = ["অপেক্ষমাণ","অনুমোদিত","বাতিল","স্থগিত"]
     if status not in allowed: raise HTTPException(400, "অবৈধ স্ট্যাটাস।")
     with db() as c:
-        cur = c.execute(sql_placeholders("UPDATE partner_requests SET status=? WHERE id=?"), (status, partner_id))
-        if not cur.rowcount: raise HTTPException(404, "আবেদন পাওয়া যায়নি।")
+        partner = c.execute(sql_placeholders("SELECT * FROM partner_requests WHERE id=?"), (partner_id,)).fetchone()
+        if not partner: raise HTTPException(404, "আবেদন পাওয়া যায়নি।")
+        c.execute(sql_placeholders("UPDATE partner_requests SET status=? WHERE id=?"), (status, partner_id))
+        if status == "অনুমোদিত":
+            c.execute(sql_placeholders("""INSERT INTO partner_sites
+                (partner_request_id,shop_name,owner_name,phone,subdomain,area,status,created_at)
+                VALUES(?,?,?,?,?,?,?,?)
+                ON CONFLICT(partner_request_id) DO UPDATE SET
+                shop_name=excluded.shop_name, owner_name=excluded.owner_name,
+                phone=excluded.phone, subdomain=excluded.subdomain, area=excluded.area,
+                status='সক্রিয়'"""),
+                (partner["id"], partner["shop_name"], partner["owner_name"], partner["phone"],
+                 partner["subdomain"], partner["area"], "সক্রিয়", now()))
+        else:
+            c.execute(sql_placeholders("UPDATE partner_sites SET status=? WHERE partner_request_id=?"),
+                      ("বন্ধ", partner_id))
     log_action(request.session["admin"], "partner_status:"+status, "partner", partner_id)
     return RedirectResponse("/admin/dashboard", status_code=303)
 
