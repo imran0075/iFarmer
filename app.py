@@ -66,6 +66,14 @@ def init_db():
             shop_name TEXT NOT NULL, owner_name TEXT NOT NULL, phone TEXT NOT NULL,
             subdomain TEXT NOT NULL UNIQUE, area TEXT NOT NULL,
             status TEXT NOT NULL DEFAULT 'সক্রিয়', created_at TEXT NOT NULL)""")
+        c.execute(f"""CREATE TABLE IF NOT EXISTS partner_accounts(
+            id {primary_key}, partner_request_id INTEGER NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL, created_at TEXT NOT NULL)""")
+        c.execute(f"""CREATE TABLE IF NOT EXISTS partner_products(
+            id {primary_key}, partner_request_id INTEGER NOT NULL,
+            name TEXT NOT NULL, price TEXT NOT NULL, unit TEXT NOT NULL,
+            description TEXT DEFAULT '', status TEXT NOT NULL DEFAULT 'সক্রিয়',
+            created_at TEXT NOT NULL)""")
 init_db()
 
 def log_action(actor, action, item_type, item_id=None):
@@ -79,6 +87,19 @@ def clean(s, maxlen=300):
 def contains_forbidden(*values):
     text = " ".join(values).lower()
     return any(x.lower() in text for x in FORBIDDEN)
+
+def password_digest(password, salt=None):
+    salt = salt or secrets.token_hex(16)
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), 240000).hex()
+    return salt + "$" + digest
+
+def password_matches(password, stored):
+    try:
+        salt, digest = stored.split("$", 1)
+        check = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), 240000).hex()
+        return hmac.compare_digest(check, digest)
+    except (ValueError, AttributeError):
+        return False
 
 def esc(s):
     import html
@@ -158,19 +179,24 @@ def partner():
 <label>মালিক/যোগাযোগ ব্যক্তির নাম<input name="owner_name" required maxlength="100"></label>
 <label>মোবাইল নম্বর<input name="phone" required maxlength="30" inputmode="tel"></label>
 <label>ইমেইল (ঐচ্ছিক)<input name="email" type="email" maxlength="160"></label>
+<label>ড্যাশবোর্ড পাসওয়ার্ড<input name="password" type="password" required minlength="8" maxlength="128" autocomplete="new-password"></label>
 <label>প্রস্তাবিত সাবডোমেইন নাম<input name="subdomain" required maxlength="50" pattern="[a-zA-Z0-9-]{3,50}" placeholder="যেমন: rahim-agro"></label>
 <label>এলাকা<input name="area" required maxlength="200" placeholder="বাজার, উপজেলা, জেলা"></label>
 <label class="wide">ব্যবসার সংক্ষিপ্ত বিবরণ<textarea name="description" maxlength="400"></textarea></label>
 </div><button class="btn primary" type="submit">অনুমোদনের জন্য পাঠান</button>
 <p class="fine">শুধু ইংরেজি অক্ষর, সংখ্যা ও হাইফেন দিয়ে সাবডোমেইন লিখুন। অনুমোদনের পর ডোমেইন/DNS সেটআপ আলাদাভাবে প্রয়োজন হবে।</p>
+<p class="fine">আগে আবেদন করেছেন? <a href="/partner/login">পার্টনার লগইন</a></p>
 </form></main>"""
     return page("পার্টনার আবেদন", body)
 
 @app.post("/partner", response_class=HTMLResponse)
 def create_partner(shop_name: str=Form(...), owner_name: str=Form(...), phone: str=Form(...),
-                   email: str=Form(""), subdomain: str=Form(...), area: str=Form(...), description: str=Form("")):
+                   email: str=Form(""), password: str=Form(...), subdomain: str=Form(...),
+                   area: str=Form(...), description: str=Form("")):
     vals = [clean(shop_name,140), clean(owner_name,100), clean(phone,30), clean(email,160),
             clean(subdomain,50).lower(), clean(area,200), clean(description,400)]
+    if len(password) < 8 or len(password) > 128:
+        raise HTTPException(400, "পাসওয়ার্ড ৮ থেকে ১২৮ অক্ষরের হতে হবে।")
     if contains_forbidden(*vals):
         raise HTTPException(400, "এই ব্র্যান্ডের নাম iFarmer-এ অনুমোদিত নয়।")
     if not re.fullmatch(r"[a-z0-9](?:[a-z0-9-]{1,48}[a-z0-9])", vals[4]):
@@ -180,11 +206,97 @@ def create_partner(shop_name: str=Form(...), owner_name: str=Form(...), phone: s
             cur = c.execute(sql_placeholders("""INSERT INTO partner_requests(shop_name,owner_name,phone,email,subdomain,area,description,created_at)
             VALUES(?,?,?,?,?,?,?,?)""") + (" RETURNING id" if DATABASE_URL else ""), (*vals, now()))
             pid = cur.fetchone()["id"] if DATABASE_URL else cur.lastrowid
+            c.execute(sql_placeholders("INSERT INTO partner_accounts(partner_request_id,password_hash,created_at) VALUES(?,?,?)"),
+                      (pid, password_digest(password), now()))
     except (sqlite3.IntegrityError, psycopg.errors.UniqueViolation):
         raise HTTPException(409, "এই সাবডোমেইন নাম আগে থেকেই আবেদন করা হয়েছে।")
     log_action("public", "partner_request_created", "partner", pid)
     body = f"""<main class="narrow"><section class="success"><div class="success-icon">✓</div><h1>আবেদন জমা হয়েছে</h1><p>আবেদন নম্বর <b>IP-{pid:05d}</b>। স্ট্যাটাস: অপেক্ষমাণ। মালিক অনুমোদন না দেওয়া পর্যন্ত সাইট চালু হবে না।</p><a class="btn primary" href="/">হোমে ফিরে যান</a></section></main>"""
     return page("আবেদন জমা", body)
+
+
+@app.get("/partner/login", response_class=HTMLResponse)
+def partner_login_page(request: Request):
+    if request.session.get("partner_id"):
+        return RedirectResponse("/partner/dashboard", status_code=303)
+    body = """<main class="narrow"><section class="section-head"><div><div class="eyebrow">iFarmer পার্টনার</div><h1>পার্টনার লগইন</h1></div><p>আবেদনের সময় দেওয়া সাবডোমেইন নাম ও পাসওয়ার্ড ব্যবহার করুন।</p></section>
+<form class="form card" method="post" action="/partner/login">
+<label>সাবডোমেইন নাম<input name="subdomain" required maxlength="50" placeholder="যেমন: rahim-agro"></label>
+<label>পাসওয়ার্ড<input name="password" type="password" required autocomplete="current-password"></label>
+<button class="btn primary" type="submit">লগইন</button><p class="fine"><a href="/partner">নতুন পার্টনার আবেদন</a></p></form></main>"""
+    return page("পার্টনার লগইন", body)
+
+@app.post("/partner/login", response_class=HTMLResponse)
+def partner_login(request: Request, subdomain: str=Form(...), password: str=Form(...)):
+    slug = clean(subdomain, 50).lower()
+    with db() as c:
+        row = c.execute(sql_placeholders("""SELECT pr.id,pr.status,pa.password_hash
+            FROM partner_requests pr JOIN partner_accounts pa ON pa.partner_request_id=pr.id
+            WHERE pr.subdomain=?"""), (slug,)).fetchone()
+    if not row or not password_matches(password, row["password_hash"]):
+        raise HTTPException(401, "সাবডোমেইন নাম বা পাসওয়ার্ড সঠিক নয়।")
+    if row["status"] != "অনুমোদিত":
+        raise HTTPException(403, "মালিক আবেদন অনুমোদন করার পর ড্যাশবোর্ড ব্যবহার করতে পারবেন।")
+    request.session["partner_id"] = row["id"]
+    return RedirectResponse("/partner/dashboard", status_code=303)
+
+@app.post("/partner/logout")
+def partner_logout(request: Request):
+    request.session.pop("partner_id", None)
+    return RedirectResponse("/partner/login", status_code=303)
+
+@app.get("/partner/dashboard", response_class=HTMLResponse)
+def partner_dashboard(request: Request):
+    partner_id = request.session.get("partner_id")
+    if not partner_id:
+        return RedirectResponse("/partner/login", status_code=303)
+    with db() as c:
+        partner = c.execute(sql_placeholders("SELECT * FROM partner_requests WHERE id=?"), (partner_id,)).fetchone()
+        products = c.execute(sql_placeholders("SELECT * FROM partner_products WHERE partner_request_id=? ORDER BY id DESC LIMIT 100"), (partner_id,)).fetchall()
+    if not partner or partner["status"] != "অনুমোদিত":
+        request.session.pop("partner_id", None)
+        return RedirectResponse("/partner/login", status_code=303)
+    def product_row(p):
+        return f"""<tr><td><b>{esc(p['name'])}</b><br><small>{esc(p['description'])}</small></td><td>{esc(p['price'])} টাকা / {esc(p['unit'])}</td><td>{esc(p['status'])}</td><td><form method="post" action="/partner/product/status"><input type="hidden" name="product_id" value="{p['id']}"><input type="hidden" name="status" value="বন্ধ"><button class="mini">বন্ধ করুন</button></form></td></tr>"""
+    body = f"""<main class="admin-main"><div class="admin-head"><div><div class="eyebrow">iFarmer PARTNER</div><h1>পার্টনার ড্যাশবোর্ড</h1><p>{esc(partner['shop_name'])} · {esc(partner['subdomain'])}</p></div><form method="post" action="/partner/logout"><button class="btn light">লগআউট</button></form></div>
+<div class="stats admin-stats"><div><b>{len(products)}</b><span>পণ্য তালিকা</span></div><div><b>{esc(partner['area'])}</b><span>ব্যবসার এলাকা</span></div></div>
+<section class="admin-section"><h2>নতুন পণ্য যোগ করুন</h2><form class="form card" method="post" action="/partner/product"><div class="form-grid"><label>পণ্যের নাম<input name="name" required maxlength="140"></label><label>দাম (টাকা)<input name="price" required maxlength="30" inputmode="decimal" placeholder="যেমন: ২৫০"></label><label>একক<input name="unit" required maxlength="40" placeholder="যেমন: প্যাকেট / কেজি"></label><label class="wide">বিবরণ<textarea name="description" maxlength="400"></textarea></label></div><button class="btn primary" type="submit">পণ্য যোগ করুন</button></form></section>
+<section class="admin-section"><h2>আমার পণ্য</h2><div class="table-wrap"><table><thead><tr><th>পণ্য</th><th>দাম</th><th>অবস্থা</th><th>কাজ</th></tr></thead><tbody>{''.join(product_row(p) for p in products) or '<tr><td colspan="4">এখনো পণ্য যোগ করা হয়নি।</td></tr>'}</tbody></table></div><p class="fine">এই তালিকা পার্টনার ড্যাশবোর্ডে সংরক্ষিত হয়। আলাদা সাবডোমেইন স্টোরফ্রন্ট ও অর্ডার যুক্ত করা পরের ধাপ; সেগুলো চালু হওয়ার আগে পণ্যগুলো ক্রেতাদের সামনে প্রকাশিত হবে না।</p></section></main>"""
+    return page("পার্টনার ড্যাশবোর্ড", body)
+
+@app.post("/partner/product")
+def partner_add_product(request: Request, name: str=Form(...), price: str=Form(...),
+                        unit: str=Form(...), description: str=Form("")):
+    partner_id = request.session.get("partner_id")
+    if not partner_id:
+        return RedirectResponse("/partner/login", status_code=303)
+    values = [clean(name, 140), clean(price, 30), clean(unit, 40), clean(description, 400)]
+    if not values[0] or not values[1] or not values[2] or contains_forbidden(*values):
+        raise HTTPException(400, "পণ্যের তথ্য সঠিকভাবে দিন।")
+    with db() as c:
+        partner = c.execute(sql_placeholders("SELECT status FROM partner_requests WHERE id=?"), (partner_id,)).fetchone()
+        if not partner or partner["status"] != "অনুমোদিত":
+            raise HTTPException(403, "অনুমোদিত পার্টনার ছাড়া পণ্য যোগ করা যাবে না।")
+        c.execute(sql_placeholders("""INSERT INTO partner_products
+            (partner_request_id,name,price,unit,description,created_at) VALUES(?,?,?,?,?,?)"""),
+            (partner_id, values[0], values[1], values[2], values[3], now()))
+    log_action("partner:"+str(partner_id), "product_created", "partner_product", partner_id)
+    return RedirectResponse("/partner/dashboard", status_code=303)
+
+@app.post("/partner/product/status")
+def partner_product_status(request: Request, product_id: int=Form(...), status: str=Form(...)):
+    partner_id = request.session.get("partner_id")
+    if not partner_id:
+        return RedirectResponse("/partner/login", status_code=303)
+    if status not in ["সক্রিয়", "বন্ধ"]:
+        raise HTTPException(400, "অবৈধ স্ট্যাটাস।")
+    with db() as c:
+        cur = c.execute(sql_placeholders("UPDATE partner_products SET status=? WHERE id=? AND partner_request_id=?"),
+                        (status, product_id, partner_id))
+        if not cur.rowcount:
+            raise HTTPException(404, "পণ্য পাওয়া যায়নি।")
+    log_action("partner:"+str(partner_id), "product_status:"+status, "partner_product", product_id)
+    return RedirectResponse("/partner/dashboard", status_code=303)
 
 def require_admin(request: Request):
     if not request.session.get("admin"):
