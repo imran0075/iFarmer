@@ -8,3 +8,6 @@
 /* Product photos: show the complete image without cropping */
 .product-photo{display:block;width:100%;height:190px;object-fit:contain;object-position:center;border-radius:12px;margin:0 0 14px;background:#f3f7f4}
 @media(max-width:700px){.product-photo{height:200px}}
+
+/* Partner product management controls */
+.partner-product-thumb{width:76px;height:76px;object-fit:contain;background:#f3f7f4;border:1px solid var(--line);border-radius:9px;margin:0 0 8px;vertical-align:middle}.partner-action-link{display:inline-block;text-align:center;text-decoration:none}.danger-mini{background:#a83232}
