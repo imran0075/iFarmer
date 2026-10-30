@@ -123,9 +123,9 @@ def page(title, body, active=""):
 <meta name="theme-color" content="#176b45"><title>{esc(title)} · iFarmer</title>
 <link rel="stylesheet" href="/static/style.css"></head><body>
 <header class="top"><a class="brand" href="/"><span class="logo">🌱</span><span>iFarmer</span></a>
-<nav><a href="/#products">পণ্য</a><a href="/#order">অর্ডার</a><a href="/track-order">অর্ডার ট্র্যাক</a><a href="/partner">পার্টনার হোন</a></nav></header>
+<nav><a href="/agri">কৃষি সহায়ক</a><a href="/#products">পণ্য</a><a href="/#order">অর্ডার</a><a href="/track-order">অর্ডার ট্র্যাক</a><a href="/partner">পার্টনার হোন</a></nav></header>
 {body}
-<nav class="mobile-dock" aria-label="প্রধান মেনু"><a href="/">⌂<span>হোম</span></a><a href="/#products">▦<span>পণ্য</span></a><a href="/#order">＋<span>অর্ডার</span></a><a href="/partner/login">♙<span>প্রোফাইল</span></a></nav>
+<nav class="mobile-dock" aria-label="প্রধান মেনু"><a href="/">⌂<span>হোম</span></a><a href="/agri">🌱<span>কৃষি</span></a><a href="/#products">▦<span>পণ্য</span></a><a href="/partner/login">♙<span>প্রোফাইল</span></a></nav>
 <footer><b>iFarmer</b><p>কৃষির ডিজিটাল সহযাত্রী</p><div><a href="/privacy">গোপনীয়তা</a> · <a href="/terms">শর্তাবলি</a> · <a href="/admin">মালিক লগইন</a></div>
 <small>© {datetime.now().year} iFarmer</small></footer></body></html>"""
 
@@ -154,6 +154,14 @@ def home():
 <div class="hero-note">সহজ অর্ডার · ফোনে নিশ্চিতকরণ · ডেলিভারির নিয়ম বিক্রেতার সঙ্গে নিশ্চিত করুন</div>
 </section>
 <section class="stats"><div><b>🌾</b><span>কৃষি পণ্য</span></div><div><b>🛒</b><span>সহজ অর্ডার</span></div><div><b>📞</b><span>ফোনে নিশ্চিতকরণ</span></div><div><b>🏪</b><span>স্থানীয় পার্টনার</span></div></section>
+<section class="section" id="agriculture">
+<div class="section-head"><div><div class="eyebrow">কৃষকের ডিজিটাল সহকারী</div><h2>কৃষি সহায়ক সেবা</h2></div><p>আবহাওয়া দেখুন, জমির হিসাব করুন এবং ফসলের সমস্যা সম্পর্কে তথ্য জমা দিন।</p></div>
+<div class="cards">
+<article class="card"><div class="card-icon">🌦️</div><h3>কৃষি আবহাওয়া</h3><p>জেলাভিত্তিক তাপমাত্রা, বৃষ্টি ও বাতাসের তথ্য।</p><a class="btn primary" href="/agri/weather">আবহাওয়া দেখুন</a></article>
+<article class="card"><div class="card-icon">🧮</div><h3>সার ক্যালকুলেটর</h3><p>জমির পরিমাণ ও সুপারিশকৃত মাত্রা দিয়ে মোট সার হিসাব।</p><a class="btn primary" href="/agri/fertilizer">সার হিসাব করুন</a></article>
+<article class="card"><div class="card-icon">🧴</div><h3>কীটনাশক ক্যালকুলেটর</h3><p>অনুমোদিত পণ্যের লেবেলে দেওয়া মাত্রা অনুযায়ী হিসাব।</p><a class="btn primary" href="/agri/pesticide">মাত্রা হিসাব করুন</a></article>
+<article class="card"><div class="card-icon">📷</div><h3>ফসলের সমস্যা</h3><p>ফসলের ছবি ও লক্ষণ জমা দিন; AI রোগ শনাক্তকরণ এখনো চালু নয়।</p><a class="btn primary" href="/agri/diagnose">ছবি জমা দিন</a></article>
+</div></section>
 <section id="products" class="section"><div class="section-head"><div><div class="eyebrow">iFarmer মার্কেটপ্লেস</div><h2>পার্টনারদের পণ্য</h2></div><p>পণ্যের প্রাপ্যতা, দাম ও ব্যবহার বিক্রেতার সঙ্গে নিশ্চিত করুন।</p></div>
 <div class="cards">{product_cards}</div></section>
 <section id="order" class="section order-section"><div class="section-head"><div><div class="eyebrow">অর্ডার রিকোয়েস্ট</div><h2>আপনার অর্ডারের তথ্য দিন</h2></div><p>ফর্ম পাঠানোর পর বিক্রেতা আপনার সঙ্গে যোগাযোগ করবেন।</p></div>
