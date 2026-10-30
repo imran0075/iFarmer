@@ -95,19 +95,19 @@ def weather_form():
 <form class="form card" method="post"><label>জেলা/এলাকা<select name="city">{opts}</select></label><button class="btn primary">জেলার আবহাওয়া দেখুন</button></form>
 <p class="fine">লোকেশন শুধু এই পাতায় আপনার অবস্থান শনাক্ত করার জন্য ব্রাউজার থেকে চাওয়া হবে। অনুমতি না দিলেও জেলা নির্বাচন করে আবহাওয়া দেখা যাবে।</p>
 <script>
-function detectMyLocation() {
+function detectMyLocation() {{
   const status = document.getElementById('gps-status');
-  if (!navigator.geolocation) { status.textContent = 'আপনার ব্রাউজারে GPS লোকেশন সুবিধা নেই।'; return; }
+  if (!navigator.geolocation) {{ status.textContent = 'আপনার ব্রাউজারে GPS লোকেশন সুবিধা নেই।'; return; }}
   status.textContent = 'আপনার অবস্থান জানতে অনুমতি চাওয়া হচ্ছে…';
-  navigator.geolocation.getCurrentPosition(function(position) {
+  navigator.geolocation.getCurrentPosition(function(position) {{
     const lat = position.coords.latitude.toFixed(5);
     const lon = position.coords.longitude.toFixed(5);
     status.textContent = 'অবস্থান শনাক্ত হয়েছে। অক্ষাংশ: ' + lat + ', দ্রাঘিমাংশ: ' + lon + '। স্বয়ংক্রিয় আবহাওয়া দেখানোর পরবর্তী ধাপ এখনো যুক্ত করা বাকি।';
-  }, function(error) {
-    const messages = {1:'লোকেশন অনুমতি দেওয়া হয়নি। Chrome Site settings থেকে Location → Allow করুন।',2:'ফোনের অবস্থান পাওয়া যাচ্ছে না। ফোনের Location চালু করুন।',3:'লোকেশন পেতে সময় শেষ হয়েছে। আবার চেষ্টা করুন।'};
+  }}, function(error) {{
+    const messages = {{1:'লোকেশন অনুমতি দেওয়া হয়নি। Chrome Site settings থেকে Location → Allow করুন।',2:'ফোনের অবস্থান পাওয়া যাচ্ছে না। ফোনের Location চালু করুন।',3:'লোকেশন পেতে সময় শেষ হয়েছে। আবার চেষ্টা করুন।'}};
     status.textContent = messages[error.code] || 'লোকেশন পাওয়া যায়নি। আবার চেষ্টা করুন.';
-  }, {enableHighAccuracy:true, timeout:15000, maximumAge:60000});
-}
+  }}, {{enableHighAccuracy:true, timeout:15000, maximumAge:60000}});
+}}
 </script>""")
 
 @router.post("/agri/weather", response_class=HTMLResponse)
