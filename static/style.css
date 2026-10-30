@@ -5,6 +5,6 @@
 .admin-main .table-wrap{overflow:visible;border:0;background:transparent}.admin-main table{min-width:0;width:100%;display:block}.admin-main table thead{display:none}.admin-main table tbody{display:block}.admin-main table tr{display:block;background:#fff;border:1px solid var(--line);border-radius:14px;margin:12px 0;overflow:hidden}.admin-main table td{display:block;width:100%;padding:12px 14px;border-bottom:1px solid var(--line);overflow-wrap:anywhere}.admin-main table td:last-child{background:#f1f8f3;border-bottom:0}.admin-main table td select{display:block;width:100%;max-width:none;min-height:44px;font-size:16px}.admin-main table td .mini{width:100%;min-height:44px;font-size:15px}.admin-main table td form{display:block;width:100%}
 }
 
-/* Product photos: fixed preview size with automatic center crop */
-.product-photo{display:block;width:100%;height:180px;aspect-ratio:4/3;object-fit:cover;object-position:center;border-radius:12px;margin:0 0 14px;background:#eef5ef}
-@media(max-width:700px){.product-photo{height:190px;aspect-ratio:4/3}}
+/* Product photos: show the complete image without cropping */
+.product-photo{display:block;width:100%;height:190px;object-fit:contain;object-position:center;border-radius:12px;margin:0 0 14px;background:#f3f7f4}
+@media(max-width:700px){.product-photo{height:200px}}
