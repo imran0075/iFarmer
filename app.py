@@ -120,7 +120,7 @@ def page(title, body, active=""):
 <meta name="theme-color" content="#176b45"><title>{esc(title)} · iFarmer</title>
 <link rel="stylesheet" href="/static/style.css"></head><body>
 <header class="top"><a class="brand" href="/"><span class="logo">🌱</span><span>iFarmer</span></a>
-<nav><a href="/#products">পণ্য</a><a href="/#order">অর্ডার</a><a href="/partner">পার্টনার হোন</a></nav></header>
+<nav><a href="/#products">পণ্য</a><a href="/#order">অর্ডার</a><a href="/track-order">অর্ডার ট্র্যাক</a><a href="/partner">পার্টনার হোন</a></nav></header>
 {body}
 <footer><b>iFarmer</b><p>কৃষির ডিজিটাল সহযাত্রী</p><div><a href="/privacy">গোপনীয়তা</a> · <a href="/terms">শর্তাবলি</a> · <a href="/admin">মালিক লগইন</a></div>
 <small>© {datetime.now().year} iFarmer</small></footer></body></html>"""
@@ -196,8 +196,35 @@ def create_order(name: str=Form(...), phone: str=Form(...), address: str=Form(..
     log_action("public", "order_created", "order", oid)
     body = f"""<main class="narrow"><section class="success"><div class="success-icon">✓</div><h1>অর্ডারের অনুরোধ গ্রহণ করা হয়েছে</h1>
 <p>আপনার অনুরোধ নম্বর <b>IF-{oid:05d}</b>। বিক্রেতা ফোনে যোগাযোগ করে তথ্য নিশ্চিত করতে পারেন।</p>
-<p>পণ্য, মূল্য ও ডেলিভারি নিশ্চিত না হওয়া পর্যন্ত অর্ডার চূড়ান্ত নয়।</p><a class="btn primary" href="/">হোমে ফিরে যান</a></section></main>"""
+<p>পণ্য, মূল্য ও ডেলিভারি নিশ্চিত না হওয়া পর্যন্ত অর্ডার চূড়ান্ত নয়।</p><a class="btn primary" href="/track-order?order_code=IF-{oid:05d}">অর্ডার ট্র্যাক করুন</a> <a class="btn light" href="/">হোমে ফিরে যান</a></section></main>"""
     return page("অর্ডার গ্রহণ", body)
+
+@app.get("/track-order", response_class=HTMLResponse)
+def track_order(order_code: str = ""):
+    code = clean(order_code, 20).upper()
+    body = f"""<main class="narrow"><section class="section-head"><div><div class="eyebrow">অর্ডার ট্র্যাকিং</div><h1>আপনার অর্ডারের অবস্থা দেখুন</h1></div><p>অর্ডার নম্বর ও অর্ডারের সময় দেওয়া মোবাইল নম্বর লিখুন।</p></section>
+<form class="form card" method="post" action="/track-order">
+<label>অর্ডার নম্বর<input name="order_code" required maxlength="20" value="{esc(code)}" placeholder="যেমন: IF-00001"></label>
+<label>মোবাইল নম্বর<input name="phone" required inputmode="tel" maxlength="30" placeholder="অর্ডারে দেওয়া নম্বর"></label>
+<button class="btn primary" type="submit">অর্ডার খুঁজুন</button></form></main>"""
+    return page("অর্ডার ট্র্যাক", body)
+
+@app.post("/track-order", response_class=HTMLResponse)
+def track_order_post(order_code: str=Form(...), phone: str=Form(...)):
+    code = clean(order_code, 20).upper()
+    match = re.fullmatch(r"IF-(\\d{1,10})", code)
+    if not match:
+        raise HTTPException(400, "সঠিক অর্ডার নম্বর লিখুন, যেমন IF-00001।")
+    oid = int(match.group(1))
+    phone_value = clean(phone, 30)
+    with db() as c:
+        row = c.execute(sql_placeholders("SELECT id,product,quantity,status,created_at FROM orders WHERE id=? AND phone=?"), (oid, phone_value)).fetchone()
+    if not row:
+        body = """<main class="narrow"><section class="card"><h1>অর্ডার পাওয়া যায়নি</h1><p>অর্ডার নম্বর ও মোবাইল নম্বর মিলিয়ে আবার চেষ্টা করুন।</p><a class="btn light" href="/track-order">আবার খুঁজুন</a></section></main>"""
+        return page("অর্ডার পাওয়া যায়নি", body)
+    statuses = ["নতুন", "ফোনে যোগাযোগ করতে হবে", "নিশ্চিত", "প্রসেসিং", "ডেলিভারির পথে", "সম্পন্ন", "বাতিল"]
+    body = f"""<main class="narrow"><section class="success"><div class="success-icon">✓</div><h1>অর্ডার: IF-{row['id']:05d}</h1><p>অর্ডারের তথ্য</p><div class="card"><p><b>পণ্য:</b> {esc(row['product'])}</p><p><b>পরিমাণ:</b> {esc(row['quantity'])}</p><p><b>তারিখ:</b> {esc(row['created_at'])}</p><p><b>বর্তমান অবস্থা:</b> <strong>{esc(row['status'])}</strong></p></div><a class="btn light" href="/track-order">অন্য অর্ডার ট্র্যাক করুন</a></section></main>"""
+    return page("অর্ডারের অবস্থা", body)
 
 @app.get("/partner", response_class=HTMLResponse)
 def partner():
