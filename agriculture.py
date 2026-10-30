@@ -23,11 +23,30 @@ def shell(title, body):
 @router.get("/agri", response_class=HTMLResponse)
 def agri_home():
     body = """<div class="eyebrow">কৃষকের ডিজিটাল সহকারী</div><h1>কৃষি সহায়ক</h1><p>আবহাওয়া, সার ও কীটনাশকের হিসাব এবং ফসলের ছবি জমা দেওয়ার সুবিধা।</p><div class="cards">
-    <article class="card"><h2>🌦️ দৈনিক আবহাওয়া</h2><p>জেলা নির্বাচন করে তাপমাত্রা, বৃষ্টি, আর্দ্রতা ও বাতাসের তথ্য দেখুন।</p><a class="btn primary" href="/agri/weather">আবহাওয়া দেখুন</a></article>
+    <article class="card"><h2>📚 সরকারি সার সুপারিশ</h2><p>BARC, Crop Zoning ও DAE-এর সরকারি কৃষি তথ্যসূত্র দেখুন।</p><a class="btn primary" href="/agri/official-data">সরকারি তথ্য দেখুন</a></article><article class="card"><h2>🌦️ দৈনিক আবহাওয়া</h2><p>জেলা নির্বাচন করে তাপমাত্রা, বৃষ্টি, আর্দ্রতা ও বাতাসের তথ্য দেখুন।</p><a class="btn primary" href="/agri/weather">আবহাওয়া দেখুন</a></article>
     <article class="card"><h2>🧮 সার হিসাব</h2><p>কৃষি কর্মকর্তার সুপারিশকৃত একক মাত্রা দিয়ে জমির মোট পরিমাণ হিসাব করুন।</p><a class="btn primary" href="/agri/fertilizer">হিসাব করুন</a></article>
     <article class="card"><h2>🧴 কীটনাশক হিসাব</h2><p>শুধু পণ্যের অনুমোদিত লেবেলে লেখা মাত্রা বসিয়ে পরিমাণ হিসাব করুন।</p><a class="btn primary" href="/agri/pesticide">লেবেলভিত্তিক হিসাব</a></article>
     <article class="card"><h2>📷 রোগ-পোকা শনাক্তকরণ</h2><p>ফসলের ছবি জমা দিন। AI শনাক্তকরণ চালু না হওয়া পর্যন্ত নিশ্চিত রোগনির্ণয় দেখানো হবে না।</p><a class="btn primary" href="/agri/diagnose">ছবি জমা দিন</a></article></div>"""
     return shell("কৃষি সহায়ক", body)
+
+@router.get("/agri/official-data", response_class=HTMLResponse)
+def official_data():
+    body = """<div class="eyebrow">সরকারি কৃষি তথ্য</div><h1>ফসলভিত্তিক সরকারি সার সুপারিশ</h1>
+<p>প্রথম পর্যায়: নরসিংদী জেলার রায়পুরা উপজেলা। ফসল, মৌসুম, জাত ও জমির তথ্য অনুযায়ী সরকারি উৎস থেকে সুপারিশ যাচাই করুন।</p>
+<div class="cards">
+<article class="card"><h2>🌾 ধান</h2><p>মৌসুম, জাত ও জমির ধরন অনুযায়ী সুপারিশ দেখুন।</p></article>
+<article class="card"><h2>🌿 গম</h2><p>মৌসুম ও স্থানীয় মাটির অবস্থা অনুযায়ী তথ্য যাচাই করুন।</p></article>
+<article class="card"><h2>🌽 ভুট্টা</h2><p>জমির উপযোগিতা ও সার ব্যবস্থাপনা সংক্রান্ত তথ্য দেখুন।</p></article>
+<article class="card"><h2>🥔 আলু</h2><p>জাত ও উৎপাদন মৌসুমভিত্তিক সুপারিশ যাচাই করুন।</p></article></div>
+<h2>সরকারি তথ্যসূত্র</h2><ul>
+<li><a href="https://portal.cropzoning.gov.bd/" target="_blank" rel="noopener">BARC কৃষি পরামর্শক বাতায়ন / Crop Zoning</a></li>
+<li><a href="https://portal.cropzoning.gov.bd/cropSuitability" target="_blank" rel="noopener">উপজেলাভিত্তিক ফসলের উপযোগিতা</a></li>
+<li><a href="https://apps.barc.gov.bd/fertilizer_recommendation/FRG%20English%2030.10.2024.pdf" target="_blank" rel="noopener">BARC Fertilizer Recommendation Guide 2024 (PDF)</a></li>
+<li><a href="https://www.bamis.gov.bd/" target="_blank" rel="noopener">DAE BAMIS — ফসল উৎপাদন প্যাকেজ ও কৃষি পরামর্শ</a></li>
+</ul>
+<p class="fine"><b>ডেটার অবস্থা:</b> এটি সরকারি উৎসসমূহে যাওয়ার প্রাথমিক তথ্য পৃষ্ঠা। পূর্ণ যাচাইকৃত ফসল-উপজেলা ডোজ ডেটাসেট এখনো iFarmer-এ আমদানি করা হয়নি। তাই কোনো মাত্রা অনুমান করে দেখানো হচ্ছে না।</p>
+<a class="btn primary" href="/agri">কৃষি সহায়কে ফিরুন</a>"""
+    return shell("সরকারি সার সুপারিশ", body)
 
 @router.get("/agri/weather", response_class=HTMLResponse)
 def weather_form():
