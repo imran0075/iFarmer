@@ -31,20 +31,33 @@ def agri_home():
 
 @router.get("/agri/official-data", response_class=HTMLResponse)
 def official_data():
-    body = """<div class="eyebrow">সরকারি কৃষি তথ্য</div><h1>ফসলভিত্তিক সরকারি সার সুপারিশ</h1>
-<p>প্রথম পর্যায়: নরসিংদী জেলার রায়পুরা উপজেলা। ফসল, মৌসুম, জাত ও জমির তথ্য অনুযায়ী সরকারি উৎস থেকে সুপারিশ যাচাই করুন।</p>
+    # Verified starter records transcribed from DAE BAMIS public crop package.
+    # These are national/seasonal package values, not soil-test/union-specific advice.
+    maize = {
+        "Rabi": {"Urea": "172–312", "TSP": "168–216", "MOP": "96–144", "Gypsum": "144–168", "Zinc sulphate": "10–15", "Boric acid": "5–7 (প্রয়োজন অনুযায়ী)", "Gobar": "4–6"},
+        "Kharif-1": {"Urea": "216–268", "TSP": "132–216", "MOP": "72–120", "Gypsum": "96–144", "Zinc sulphate": "7–12", "Boric acid": "5–7 (প্রয়োজন অনুযায়ী)", "Gobar": "4–6"}
+    }
+    rows = "".join(
+        f"<tr><td>{html.escape(season)}</td><td>{html.escape(fertilizer)}</td><td>{html.escape(rate)}</td><td>কেজি/হেক্টর</td></tr>"
+        for season, values in maize.items() for fertilizer, rate in values.items()
+    )
+    body = f"""<div class="eyebrow">সরকারি কৃষি তথ্য</div><h1>ফসলভিত্তিক সরকারি সার সুপারিশ</h1>
+<p>প্রথম পর্যায়: নরসিংদী জেলার রায়পুরা উপজেলা। নিচে সরকারি BAMIS ফসল উৎপাদন প্যাকেজ থেকে যাচাই করে একটি প্রাথমিক রেকর্ড যুক্ত করা হয়েছে।</p>
+<div class="card"><h2>🌽 ভুট্টা — সার সুপারিশ</h2><p><b>উৎস:</b> DAE BAMIS, ভুট্টা উৎপাদন প্যাকেজ।</p>
+<table><thead><tr><th>মৌসুম</th><th>সার</th><th>মাত্রা</th><th>একক</th></tr></thead><tbody>{rows}</tbody></table>
+<p class="fine">BAMIS প্যাকেজে দেওয়া জাতীয় মৌসুমভিত্তিক পরিসর। এটি রায়পুরার নির্দিষ্ট জমির মাটি-পরীক্ষাভিত্তিক সুপারিশ নয়। মাটির ধরন, জাত ও স্থানীয় কৃষি কর্মকর্তার পরামর্শ অনুযায়ী চূড়ান্ত মাত্রা নির্ধারণ করুন।</p>
+<a href="https://www.bamis.gov.bd/en/croppnp/1/all/8/" target="_blank" rel="noopener">BAMIS-এর মূল ভুট্টা উৎপাদন প্যাকেজ</a></div>
 <div class="cards">
-<article class="card"><h2>🌾 ধান</h2><p>মৌসুম, জাত ও জমির ধরন অনুযায়ী সুপারিশ দেখুন।</p></article>
-<article class="card"><h2>🌿 গম</h2><p>মৌসুম ও স্থানীয় মাটির অবস্থা অনুযায়ী তথ্য যাচাই করুন।</p></article>
-<article class="card"><h2>🌽 ভুট্টা</h2><p>জমির উপযোগিতা ও সার ব্যবস্থাপনা সংক্রান্ত তথ্য দেখুন।</p></article>
-<article class="card"><h2>🥔 আলু</h2><p>জাত ও উৎপাদন মৌসুমভিত্তিক সুপারিশ যাচাই করুন।</p></article></div>
+<article class="card"><h2>🌾 ধান</h2><p>মৌসুম, জাত ও জমির ধরন অনুযায়ী সরকারি সুপারিশ যাচাই চলছে।</p></article>
+<article class="card"><h2>🌿 গম</h2><p>মৌসুম ও স্থানীয় মাটির অবস্থা অনুযায়ী তথ্য যাচাই চলছে।</p></article>
+<article class="card"><h2>🥔 আলু</h2><p>জাত ও উৎপাদন মৌসুমভিত্তিক সরকারি সুপারিশ যাচাই চলছে।</p></article></div>
 <h2>সরকারি তথ্যসূত্র</h2><ul>
 <li><a href="https://portal.cropzoning.gov.bd/" target="_blank" rel="noopener">BARC কৃষি পরামর্শক বাতায়ন / Crop Zoning</a></li>
 <li><a href="https://portal.cropzoning.gov.bd/cropSuitability" target="_blank" rel="noopener">উপজেলাভিত্তিক ফসলের উপযোগিতা</a></li>
 <li><a href="https://apps.barc.gov.bd/fertilizer_recommendation/FRG%20English%2030.10.2024.pdf" target="_blank" rel="noopener">BARC Fertilizer Recommendation Guide 2024 (PDF)</a></li>
 <li><a href="https://www.bamis.gov.bd/" target="_blank" rel="noopener">DAE BAMIS — ফসল উৎপাদন প্যাকেজ ও কৃষি পরামর্শ</a></li>
 </ul>
-<p class="fine"><b>ডেটার অবস্থা:</b> এটি সরকারি উৎসসমূহে যাওয়ার প্রাথমিক তথ্য পৃষ্ঠা। পূর্ণ যাচাইকৃত ফসল-উপজেলা ডোজ ডেটাসেট এখনো iFarmer-এ আমদানি করা হয়নি। তাই কোনো মাত্রা অনুমান করে দেখানো হচ্ছে না।</p>
+<p class="fine"><b>ডেটার অবস্থা:</b> প্রথম সরকারি রেকর্ড যুক্ত হয়েছে (ভুট্টা)। ধান, গম, আলু ও অন্যান্য ফসলের জন্য উৎসভিত্তিক যাচাই করে ধাপে ধাপে ডেটা যুক্ত করা হবে। রায়পুরার জমির নির্দিষ্ট ডোজের জন্য খামারি অ্যাপ/স্থানীয় কৃষি কর্মকর্তার মাটি- ও জমিভিত্তিক সুপারিশ প্রাধান্য পাবে।</p>
 <a class="btn primary" href="/agri">কৃষি সহায়কে ফিরুন</a>"""
     return shell("সরকারি সার সুপারিশ", body)
 
