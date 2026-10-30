@@ -288,12 +288,37 @@ def partner_dashboard(request: Request):
         request.session.pop("partner_id", None)
         return RedirectResponse("/partner/login", status_code=303)
     def product_row(p):
-        return f"""<tr><td><b>{esc(p['name'])}</b><br><small>{esc(p['description'])}</small></td><td>{esc(p['price'])} টাকা / {esc(p['unit'])}</td><td>{esc(p['status'])}</td><td><form method="post" action="/partner/product/status"><input type="hidden" name="product_id" value="{p['id']}"><input type="hidden" name="status" value="বন্ধ"><button class="mini">বন্ধ করুন</button></form></td></tr>"""
+        action_status = "বন্ধ" if p["status"] == "সক্রিয়" else "সক্রিয়"
+        action_label = "বন্ধ করুন" if p["status"] == "সক্রিয়" else "আবার চালু করুন"
+        photo = f'<img class="partner-product-thumb" src="/partner/product-image/{p["id"]}" alt="পণ্যের ছবি">' if p["image_data"] else "ছবি নেই"
+        return f"""<tr><td>{photo}<br><b>{esc(p['name'])}</b><br><small>{esc(p['description'])}</small></td><td>{esc(p['price'])} টাকা / {esc(p['unit'])}</td><td>{esc(p['status'])}</td><td><a class="mini partner-action-link" href="/partner/product/{p['id']}/edit">এডিট / ছবি পরিবর্তন</a><form method="post" action="/partner/product/status"><input type="hidden" name="product_id" value="{p['id']}"><input type="hidden" name="status" value="{action_status}"><button class="mini">{action_label}</button></form><form method="post" action="/partner/product/delete" onsubmit="return confirm('এই পণ্যটি স্থায়ীভাবে মুছে ফেলবেন?')"><input type="hidden" name="product_id" value="{p['id']}"><button class="mini danger-mini">ডিলিট করুন</button></form></td></tr>"""
     body = f"""<main class="admin-main"><div class="admin-head"><div><div class="eyebrow">iFarmer PARTNER</div><h1>পার্টনার ড্যাশবোর্ড</h1><p>{esc(partner['shop_name'])} · {esc(partner['subdomain'])}</p></div><form method="post" action="/partner/logout"><button class="btn light">লগআউট</button></form></div>
 <div class="stats admin-stats"><div><b>{len(products)}</b><span>পণ্য তালিকা</span></div><div><b>{esc(partner['area'])}</b><span>ব্যবসার এলাকা</span></div></div>
 <section class="admin-section"><h2>নতুন পণ্য যোগ করুন</h2><form class="form card" method="post" action="/partner/product" enctype="multipart/form-data"><div class="form-grid"><label>পণ্যের নাম<input name="name" required maxlength="140"></label><label class="wide">পণ্যের ছবি (JPG, PNG বা WebP; সর্বোচ্চ ৪ MB)<input type="file" name="image" accept="image/jpeg,image/png,image/webp"></label><label>দাম (টাকা)<input name="price" required maxlength="30" inputmode="decimal" placeholder="যেমন: ২৫০"></label><label>একক<input name="unit" required maxlength="40" placeholder="যেমন: প্যাকেট / কেজি"></label><label class="wide">বিবরণ<textarea name="description" maxlength="400"></textarea></label></div><button class="btn primary" type="submit">পণ্য যোগ করুন</button></form></section>
-<section class="admin-section"><h2>আমার পণ্য</h2><div class="table-wrap"><table><thead><tr><th>পণ্য</th><th>দাম</th><th>অবস্থা</th><th>কাজ</th></tr></thead><tbody>{''.join(product_row(p) for p in products) or '<tr><td colspan="4">এখনো পণ্য যোগ করা হয়নি।</td></tr>'}</tbody></table></div><p class="fine">এই তালিকা পার্টনার ড্যাশবোর্ডে সংরক্ষিত হয়। আলাদা সাবডোমেইন স্টোরফ্রন্ট ও অর্ডার যুক্ত করা পরের ধাপ; সেগুলো চালু হওয়ার আগে পণ্যগুলো ক্রেতাদের সামনে প্রকাশিত হবে না।</p></section></main>"""
+<section class="admin-section"><h2>আমার পণ্য</h2><div class="table-wrap"><table><thead><tr><th>পণ্য</th><th>দাম</th><th>অবস্থা</th><th>কাজ</th></tr></thead><tbody>{''.join(product_row(p) for p in products) or '<tr><td colspan="4">এখনো পণ্য যোগ করা হয়নি।</td></tr>'}</tbody></table></div><p class="fine">এখান থেকে পণ্যের তথ্য ও ছবি পরিবর্তন, পণ্য সাময়িক বন্ধ/চালু এবং স্থায়ীভাবে মুছে ফেলা যাবে।</p></section></main>"""
     return page("পার্টনার ড্যাশবোর্ড", body)
+
+@app.get("/partner/product/{product_id}/edit", response_class=HTMLResponse)
+def partner_product_edit(request: Request, product_id: int):
+    partner_id = request.session.get("partner_id")
+    if not partner_id:
+        return RedirectResponse("/partner/login", status_code=303)
+    with db() as c:
+        p = c.execute(sql_placeholders("SELECT * FROM partner_products WHERE id=? AND partner_request_id=?"), (product_id, partner_id)).fetchone()
+    if not p:
+        raise HTTPException(404, "পণ্য পাওয়া যায়নি।")
+    photo = f'<img class="partner-edit-photo" src="/partner/product-image/{product_id}" alt="বর্তমান পণ্যের ছবি">' if p["image_data"] else '<p class="fine">এখনো কোনো ছবি দেওয়া হয়নি।</p>'
+    body = f"""<main class="narrow"><section class="section-head"><div><div class="eyebrow">পণ্য ব্যবস্থাপনা</div><h1>পণ্যের তথ্য এডিট করুন</h1></div></section>
+<form class="form card" method="post" action="/partner/product/{product_id}/edit" enctype="multipart/form-data">
+{photo}
+<div class="form-grid"><label class="wide">পণ্যের নাম<input name="name" required maxlength="140" value="{esc(p['name'])}"></label>
+<label>দাম (টাকা)<input name="price" required maxlength="30" value="{esc(p['price'])}"></label>
+<label>একক<input name="unit" required maxlength="40" value="{esc(p['unit'])}"></label>
+<label class="wide">বিবরণ<textarea name="description" maxlength="400">{esc(p['description'])}</textarea></label>
+<label class="wide">নতুন ছবি দিন (ঐচ্ছিক; JPG, PNG বা WebP; সর্বোচ্চ ৪ MB)<input type="file" name="image" accept="image/jpeg,image/png,image/webp"></label>
+<label class="wide"><span><input type="checkbox" name="remove_image" value="true"> বর্তমান ছবি মুছে ফেলুন</span></label></div>
+<button class="btn primary" type="submit">পরিবর্তন সেভ করুন</button> <a class="btn light" href="/partner/dashboard">ফিরে যান</a></form></main>"""
+    return page("পণ্য এডিট", body)
 
 @app.get("/partner/product-image/{product_id}")
 def partner_product_image(product_id: int):
@@ -302,7 +327,9 @@ def partner_product_image(product_id: int):
             WHERE id=? AND status='সক্রিয়'"""), (product_id,)).fetchone()
     if not row or not row["image_data"]:
         raise HTTPException(404, "ছবি পাওয়া যায়নি।")
-    return Response(content=bytes(row["image_data"]), media_type="image/jpeg" if bytes(row["image_data"]).startswith(b"\\xff\\xd8") else ("image/png" if bytes(row["image_data"]).startswith(b"\\x89PNG") else "image/webp"), headers={"Cache-Control":"public, max-age=3600"})
+    data = bytes(row["image_data"])
+    media = "image/jpeg" if data.startswith(bytes([255,216])) else ("image/png" if data.startswith(bytes([137,80,78,71])) else "image/webp")
+    return Response(content=data, media_type=media, headers={"Cache-Control":"no-cache"})
 
 @app.post("/partner/product")
 async def partner_add_product(request: Request, name: str=Form(...), price: str=Form(...),
@@ -329,6 +356,48 @@ async def partner_add_product(request: Request, name: str=Form(...), price: str=
             (partner_request_id,name,price,unit,description,created_at,image_data) VALUES(?,?,?,?,?,?,?)"""),
             (partner_id, values[0], values[1], values[2], values[3], now(), image_data))
     log_action("partner:"+str(partner_id), "product_created", "partner_product", partner_id)
+    return RedirectResponse("/partner/dashboard", status_code=303)
+
+@app.post("/partner/product/{product_id}/edit")
+async def partner_product_edit_post(request: Request, product_id: int, name: str=Form(...),
+        price: str=Form(...), unit: str=Form(...), description: str=Form(""),
+        remove_image: bool=Form(False), image: UploadFile | None=File(default=None)):
+    partner_id = request.session.get("partner_id")
+    if not partner_id:
+        return RedirectResponse("/partner/login", status_code=303)
+    values = [clean(name, 140), clean(price, 30), clean(unit, 40), clean(description, 400)]
+    if not values[0] or not values[1] or not values[2] or contains_forbidden(*values):
+        raise HTTPException(400, "পণ্যের তথ্য সঠিকভাবে দিন।")
+    new_image = None
+    has_new_image = bool(image and image.filename)
+    if has_new_image:
+        if image.content_type not in ["image/jpeg", "image/png", "image/webp"]:
+            raise HTTPException(400, "শুধু JPG, PNG বা WebP ছবি দিন।")
+        new_image = await image.read(4 * 1024 * 1024 + 1)
+        if len(new_image) > 4 * 1024 * 1024:
+            raise HTTPException(400, "ছবির সাইজ ৪ MB-এর কম হতে হবে।")
+    with db() as c:
+        cur = c.execute(sql_placeholders("UPDATE partner_products SET name=?,price=?,unit=?,description=? WHERE id=? AND partner_request_id=?"),
+            (values[0], values[1], values[2], values[3], product_id, partner_id))
+        if not cur.rowcount:
+            raise HTTPException(404, "পণ্য পাওয়া যায়নি।")
+        if has_new_image:
+            c.execute(sql_placeholders("UPDATE partner_products SET image_data=? WHERE id=? AND partner_request_id=?"), (new_image, product_id, partner_id))
+        elif remove_image:
+            c.execute(sql_placeholders("UPDATE partner_products SET image_data=NULL WHERE id=? AND partner_request_id=?"), (product_id, partner_id))
+    log_action("partner:"+str(partner_id), "product_updated", "partner_product", product_id)
+    return RedirectResponse("/partner/dashboard", status_code=303)
+
+@app.post("/partner/product/delete")
+def partner_product_delete(request: Request, product_id: int=Form(...)):
+    partner_id = request.session.get("partner_id")
+    if not partner_id:
+        return RedirectResponse("/partner/login", status_code=303)
+    with db() as c:
+        cur = c.execute(sql_placeholders("DELETE FROM partner_products WHERE id=? AND partner_request_id=?"), (product_id, partner_id))
+        if not cur.rowcount:
+            raise HTTPException(404, "পণ্য পাওয়া যায়নি।")
+    log_action("partner:"+str(partner_id), "product_deleted", "partner_product", product_id)
     return RedirectResponse("/partner/dashboard", status_code=303)
 
 @app.post("/partner/product/status")
