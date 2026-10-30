@@ -222,9 +222,31 @@ def track_order_post(order_code: str=Form(...), phone: str=Form(...)):
     if not row:
         body = """<main class="narrow"><section class="card"><h1>অর্ডার পাওয়া যায়নি</h1><p>অর্ডার নম্বর ও মোবাইল নম্বর মিলিয়ে আবার চেষ্টা করুন।</p><a class="btn light" href="/track-order">আবার খুঁজুন</a></section></main>"""
         return page("অর্ডার পাওয়া যায়নি", body)
-    statuses = ["নতুন", "ফোনে যোগাযোগ করতে হবে", "নিশ্চিত", "প্রসেসিং", "ডেলিভারির পথে", "সম্পন্ন", "বাতিল"]
-    body = f"""<main class="narrow"><section class="success"><div class="success-icon">✓</div><h1>অর্ডার: IF-{row['id']:05d}</h1><p>অর্ডারের তথ্য</p><div class="card"><p><b>পণ্য:</b> {esc(row['product'])}</p><p><b>পরিমাণ:</b> {esc(row['quantity'])}</p><p><b>তারিখ:</b> {esc(row['created_at'])}</p><p><b>বর্তমান অবস্থা:</b> <strong>{esc(row['status'])}</strong></p></div><a class="btn light" href="/track-order">অন্য অর্ডার ট্র্যাক করুন</a></section></main>"""
+    cancel_button = ""
+    if row["status"] in ["নতুন", "ফোনে যোগাযোগ করতে হবে"]:
+        cancel_button = f"""<form class="form card" method="post" action="/track-order/cancel"><input type="hidden" name="order_code" value="IF-{row['id']:05d}"><input type="hidden" name="phone" value="{esc(phone_value)}"><p>অর্ডারটি আর প্রয়োজন না হলে বাতিলের অনুরোধ পাঠাতে পারেন।</p><button class="btn light" type="submit">অর্ডার বাতিলের অনুরোধ</button></form>"""
+    body = f"""<main class="narrow"><section class="success"><div class="success-icon">✓</div><h1>অর্ডার: IF-{row['id']:05d}</h1><p>অর্ডারের তথ্য</p><div class="card"><p><b>পণ্য:</b> {esc(row['product'])}</p><p><b>পরিমাণ:</b> {esc(row['quantity'])}</p><p><b>তারিখ:</b> {esc(row['created_at'])}</p><p><b>বর্তমান অবস্থা:</b> <strong>{esc(row['status'])}</strong></p></div>{cancel_button}<a class="btn light" href="/track-order">অন্য অর্ডার ট্র্যাক করুন</a></section></main>"""
     return page("অর্ডারের অবস্থা", body)
+
+@app.post("/track-order/cancel", response_class=HTMLResponse)
+def track_order_cancel(order_code: str=Form(...), phone: str=Form(...)):
+    code = clean(order_code, 20).upper()
+    match = re.fullmatch(r"IF-(\d{1,10})", code)
+    if not match:
+        raise HTTPException(400, "সঠিক অর্ডার নম্বর লিখুন।")
+    oid = int(match.group(1))
+    phone_value = clean(phone, 30)
+    with db() as c:
+        row = c.execute(sql_placeholders("SELECT id,status FROM orders WHERE id=? AND phone=?"), (oid, phone_value)).fetchone()
+        if not row:
+            raise HTTPException(404, "অর্ডার পাওয়া যায়নি।")
+        if row["status"] not in ["নতুন", "ফোনে যোগাযোগ করতে হবে"]:
+            body = f"""<main class="narrow"><section class="card"><h1>বাতিলের অনুরোধ করা যাচ্ছে না</h1><p>এই অর্ডারের অবস্থা: <b>{esc(row['status'])}</b>। বিক্রেতার সঙ্গে ফোনে যোগাযোগ করুন।</p><a class="btn light" href="/track-order?order_code=IF-{oid:05d}">অর্ডার ট্র্যাক করুন</a></section></main>"""
+            return page("বাতিলের অনুরোধ", body)
+        c.execute(sql_placeholders("UPDATE orders SET status=? WHERE id=?"), ("বাতিলের অনুরোধ", oid))
+    log_action("public", "order_cancel_requested", "order", oid)
+    body = f"""<main class="narrow"><section class="success"><div class="success-icon">✓</div><h1>বাতিলের অনুরোধ পাঠানো হয়েছে</h1><p>অর্ডার IF-{oid:05d} বাতিলের অনুরোধ বিক্রেতার কাছে পাঠানো হয়েছে।</p><p>চূড়ান্ত অবস্থা অর্ডার ট্র্যাকিংয়ে দেখুন।</p><a class="btn primary" href="/track-order?order_code=IF-{oid:05d}">অর্ডার ট্র্যাক করুন</a></section></main>"""
+    return page("বাতিলের অনুরোধ", body)
 
 @app.get("/partner", response_class=HTMLResponse)
 def partner():
@@ -325,7 +347,7 @@ def partner_dashboard(request: Request):
 <section class="admin-section"><h2>নতুন পণ্য যোগ করুন</h2><form class="form card" method="post" action="/partner/product" enctype="multipart/form-data"><div class="form-grid"><label>পণ্যের নাম<input name="name" required maxlength="140"></label><label class="wide">পণ্যের ছবি (JPG, PNG বা WebP; সর্বোচ্চ ৪ MB)<input type="file" name="image" accept="image/jpeg,image/png,image/webp"></label><label>দাম (টাকা)<input name="price" required maxlength="30" inputmode="decimal" placeholder="যেমন: ২৫০"></label><label>একক<input name="unit" required maxlength="40" placeholder="যেমন: প্যাকেট / কেজি"></label><label class="wide">বিবরণ<textarea name="description" maxlength="400"></textarea></label></div><button class="btn primary" type="submit">পণ্য যোগ করুন</button></form></section>
 <section class="admin-section"><h2>আমার পণ্য</h2><div class="table-wrap"><table><thead><tr><th>পণ্য</th><th>দাম</th><th>অবস্থা</th><th>কাজ</th></tr></thead><tbody>{''.join(product_row(p) for p in products) or '<tr><td colspan="4">এখনো পণ্য যোগ করা হয়নি।</td></tr>'}</tbody></table></div><p class="fine">এখান থেকে পণ্যের তথ্য ও ছবি পরিবর্তন, পণ্য সাময়িক বন্ধ/চালু এবং স্থায়ীভাবে মুছে ফেলা যাবে।</p></section>
 <section class="admin-section" id="partner-orders"><h2>আমার অর্ডার</h2>
-<div class="table-wrap"><table><thead><tr><th>অর্ডার / সময়</th><th>ক্রেতা</th><th>পণ্য ও পরিমাণ</th><th>পেমেন্ট / নোট</th><th>স্ট্যাটাস পরিবর্তন</th></tr></thead><tbody>{''.join(f"""<tr><td><b>IF-{o['id']:05d}</b><br><small>{esc(o['created_at'])}</small></td><td><b>{esc(o['name'])}</b><br><a href="tel:{esc(o['phone'])}">{esc(o['phone'])}</a><br>{esc(o['address'])}</td><td>{esc(o['product'])}<br>পরিমাণ: {esc(o['quantity'])}</td><td>{esc(o['payment'])}<br><small>{esc(o['notes'])}</small></td><td><form method="post" action="/partner/order-status"><input type="hidden" name="order_id" value="{o['id']}"><select name="status">{''.join(f'<option {"selected" if o["status"]==st else ""}>{st}</option>' for st in ["নতুন","ফোনে যোগাযোগ করতে হবে","নিশ্চিত","প্রসেসিং","ডেলিভারির পথে","সম্পন্ন","বাতিল"])}</select><button class="mini">আপডেট</button></form></td></tr>""" for o in orders) or '<tr><td colspan="5">এখনো কোনো অর্ডার আসেনি।</td></tr>'}</tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th>অর্ডার / সময়</th><th>ক্রেতা</th><th>পণ্য ও পরিমাণ</th><th>পেমেন্ট / নোট</th><th>স্ট্যাটাস পরিবর্তন</th></tr></thead><tbody>{''.join(f"""<tr><td><b>IF-{o['id']:05d}</b><br><small>{esc(o['created_at'])}</small></td><td><b>{esc(o['name'])}</b><br><a href="tel:{esc(o['phone'])}">{esc(o['phone'])}</a><br>{esc(o['address'])}</td><td>{esc(o['product'])}<br>পরিমাণ: {esc(o['quantity'])}</td><td>{esc(o['payment'])}<br><small>{esc(o['notes'])}</small></td><td><form method="post" action="/partner/order-status"><input type="hidden" name="order_id" value="{o['id']}"><select name="status">{''.join(f'<option {"selected" if o["status"]==st else ""}>{st}</option>' for st in ["নতুন","ফোনে যোগাযোগ করতে হবে","বাতিলের অনুরোধ","নিশ্চিত","প্রসেসিং","ডেলিভারির পথে","সম্পন্ন","বাতিল"])}</select><button class="mini">আপডেট</button></form></td></tr>""" for o in orders) or '<tr><td colspan="5">এখনো কোনো অর্ডার আসেনি।</td></tr>'}</tbody></table></div>
 <p class="fine">শুধু আপনার দোকানের পণ্যের অর্ডার এখানে দেখানো হয়। ক্রেতার সঙ্গে ফোনে যোগাযোগ করে অর্ডার নিশ্চিত করুন।</p></section></main>"""
     return page("পার্টনার ড্যাশবোর্ড", body)
 
