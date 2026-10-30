@@ -6,7 +6,7 @@ from pathlib import Path
 from urllib.parse import quote
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, Form, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -73,7 +73,13 @@ def init_db():
             id {primary_key}, partner_request_id INTEGER NOT NULL,
             name TEXT NOT NULL, price TEXT NOT NULL, unit TEXT NOT NULL,
             description TEXT DEFAULT '', status TEXT NOT NULL DEFAULT 'সক্রিয়',
-            created_at TEXT NOT NULL)""")
+            created_at TEXT NOT NULL, image_data BYTEA)""")
+        if DATABASE_URL:
+            c.execute("ALTER TABLE partner_products ADD COLUMN IF NOT EXISTS image_data BYTEA")
+        else:
+            product_columns = [row["name"] for row in c.execute("PRAGMA table_info(partner_products)").fetchall()]
+            if "image_data" not in product_columns:
+                c.execute("ALTER TABLE partner_products ADD COLUMN image_data BLOB")
         c.execute(f"""CREATE TABLE IF NOT EXISTS order_product_links(
             id {primary_key}, order_id INTEGER NOT NULL UNIQUE,
             product_id INTEGER NOT NULL, partner_request_id INTEGER NOT NULL)""")
@@ -123,12 +129,12 @@ def page(title, body, active=""):
 def home():
     with db() as c:
         products = c.execute(sql_placeholders("""SELECT pp.id,pp.name,pp.price,pp.unit,pp.description,
-            pr.shop_name,pr.area FROM partner_products pp
+            pr.shop_name,pr.area,(pp.image_data IS NOT NULL) AS has_image FROM partner_products pp
             JOIN partner_requests pr ON pr.id=pp.partner_request_id
             WHERE pp.status='সক্রিয়' AND pr.status='অনুমোদিত'
             ORDER BY pp.id DESC LIMIT 60""")).fetchall()
     product_cards = ''.join(
-        f'<article class="card"><div class="card-icon">🛒</div><h3>{esc(p["name"])}</h3>'
+        f'<article class="card">{f"<img class=\'product-photo\' src=\'/partner/product-image/{p[chr(105)+chr(100)]}\' alt=\'{esc(p[chr(110)+chr(97)+chr(109)+chr(101)])}\' loading=\'lazy\'>" if p["has_image"] else "<div class=\'card-icon\'>🛒</div>"}<h3>{esc(p["name"])}</h3>'
         f'<p><b>{esc(p["price"])} টাকা / {esc(p["unit"])}</b></p>'
         f'<p>{esc(p["description"])}</p><p class="fine">বিক্রেতা: {esc(p["shop_name"])} · {esc(p["area"])}</p>'
         f'<a class="btn primary" href="#order" onclick="document.getElementById(\'order-product\').value=\'{p["id"]}\'">এই পণ্য অর্ডার করুন</a></article>' for p in products
@@ -285,26 +291,43 @@ def partner_dashboard(request: Request):
         return f"""<tr><td><b>{esc(p['name'])}</b><br><small>{esc(p['description'])}</small></td><td>{esc(p['price'])} টাকা / {esc(p['unit'])}</td><td>{esc(p['status'])}</td><td><form method="post" action="/partner/product/status"><input type="hidden" name="product_id" value="{p['id']}"><input type="hidden" name="status" value="বন্ধ"><button class="mini">বন্ধ করুন</button></form></td></tr>"""
     body = f"""<main class="admin-main"><div class="admin-head"><div><div class="eyebrow">iFarmer PARTNER</div><h1>পার্টনার ড্যাশবোর্ড</h1><p>{esc(partner['shop_name'])} · {esc(partner['subdomain'])}</p></div><form method="post" action="/partner/logout"><button class="btn light">লগআউট</button></form></div>
 <div class="stats admin-stats"><div><b>{len(products)}</b><span>পণ্য তালিকা</span></div><div><b>{esc(partner['area'])}</b><span>ব্যবসার এলাকা</span></div></div>
-<section class="admin-section"><h2>নতুন পণ্য যোগ করুন</h2><form class="form card" method="post" action="/partner/product"><div class="form-grid"><label>পণ্যের নাম<input name="name" required maxlength="140"></label><label>দাম (টাকা)<input name="price" required maxlength="30" inputmode="decimal" placeholder="যেমন: ২৫০"></label><label>একক<input name="unit" required maxlength="40" placeholder="যেমন: প্যাকেট / কেজি"></label><label class="wide">বিবরণ<textarea name="description" maxlength="400"></textarea></label></div><button class="btn primary" type="submit">পণ্য যোগ করুন</button></form></section>
+<section class="admin-section"><h2>নতুন পণ্য যোগ করুন</h2><form class="form card" method="post" action="/partner/product"><div class="form-grid"><label>পণ্যের নাম<input name="name" required maxlength="140"></label><label class="wide">পণ্যের ছবি (JPG, PNG বা WebP; সর্বোচ্চ ৪ MB)<input type="file" name="image" accept="image/jpeg,image/png,image/webp"></label><label>দাম (টাকা)<input name="price" required maxlength="30" inputmode="decimal" placeholder="যেমন: ২৫০"></label><label>একক<input name="unit" required maxlength="40" placeholder="যেমন: প্যাকেট / কেজি"></label><label class="wide">বিবরণ<textarea name="description" maxlength="400"></textarea></label></div><button class="btn primary" type="submit">পণ্য যোগ করুন</button></form></section>
 <section class="admin-section"><h2>আমার পণ্য</h2><div class="table-wrap"><table><thead><tr><th>পণ্য</th><th>দাম</th><th>অবস্থা</th><th>কাজ</th></tr></thead><tbody>{''.join(product_row(p) for p in products) or '<tr><td colspan="4">এখনো পণ্য যোগ করা হয়নি।</td></tr>'}</tbody></table></div><p class="fine">এই তালিকা পার্টনার ড্যাশবোর্ডে সংরক্ষিত হয়। আলাদা সাবডোমেইন স্টোরফ্রন্ট ও অর্ডার যুক্ত করা পরের ধাপ; সেগুলো চালু হওয়ার আগে পণ্যগুলো ক্রেতাদের সামনে প্রকাশিত হবে না।</p></section></main>"""
     return page("পার্টনার ড্যাশবোর্ড", body)
 
+@app.get("/partner/product-image/{product_id}")
+def partner_product_image(product_id: int):
+    with db() as c:
+        row = c.execute(sql_placeholders("""SELECT image_data FROM partner_products
+            WHERE id=? AND status='সক্রিয়'"""), (product_id,)).fetchone()
+    if not row or not row["image_data"]:
+        raise HTTPException(404, "ছবি পাওয়া যায়নি।")
+    return Response(content=bytes(row["image_data"]), media_type="image/jpeg" if bytes(row["image_data"]).startswith(b"\\xff\\xd8") else ("image/png" if bytes(row["image_data"]).startswith(b"\\x89PNG") else "image/webp"), headers={"Cache-Control":"public, max-age=3600"})
+
 @app.post("/partner/product")
-def partner_add_product(request: Request, name: str=Form(...), price: str=Form(...),
-                        unit: str=Form(...), description: str=Form("")):
+async def partner_add_product(request: Request, name: str=Form(...), price: str=Form(...),
+                        unit: str=Form(...), description: str=Form(""),
+                        image: UploadFile | None=File(default=None)):
     partner_id = request.session.get("partner_id")
     if not partner_id:
         return RedirectResponse("/partner/login", status_code=303)
     values = [clean(name, 140), clean(price, 30), clean(unit, 40), clean(description, 400)]
     if not values[0] or not values[1] or not values[2] or contains_forbidden(*values):
         raise HTTPException(400, "পণ্যের তথ্য সঠিকভাবে দিন।")
+    image_data = None
+    if image and image.filename:
+        if image.content_type not in ["image/jpeg", "image/png", "image/webp"]:
+            raise HTTPException(400, "শুধু JPG, PNG বা WebP ছবি দিন।")
+        image_data = await image.read(4 * 1024 * 1024 + 1)
+        if len(image_data) > 4 * 1024 * 1024:
+            raise HTTPException(400, "ছবির সাইজ ৪ MB-এর কম হতে হবে।")
     with db() as c:
         partner = c.execute(sql_placeholders("SELECT status FROM partner_requests WHERE id=?"), (partner_id,)).fetchone()
         if not partner or partner["status"] != "অনুমোদিত":
             raise HTTPException(403, "অনুমোদিত পার্টনার ছাড়া পণ্য যোগ করা যাবে না।")
         c.execute(sql_placeholders("""INSERT INTO partner_products
-            (partner_request_id,name,price,unit,description,created_at) VALUES(?,?,?,?,?,?)"""),
-            (partner_id, values[0], values[1], values[2], values[3], now()))
+            (partner_request_id,name,price,unit,description,created_at,image_data) VALUES(?,?,?,?,?,?,?)"""),
+            (partner_id, values[0], values[1], values[2], values[3], now(), image_data))
     log_action("partner:"+str(partner_id), "product_created", "partner_product", partner_id)
     return RedirectResponse("/partner/dashboard", status_code=303)
 
