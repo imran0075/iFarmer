@@ -47,17 +47,41 @@ def official_data():
 <table><thead><tr><th>মৌসুম</th><th>সার</th><th>মাত্রা</th><th>একক</th></tr></thead><tbody>{rows}</tbody></table>
 <p class="fine">BAMIS প্যাকেজে দেওয়া জাতীয় মৌসুমভিত্তিক পরিসর। এটি রায়পুরার নির্দিষ্ট জমির মাটি-পরীক্ষাভিত্তিক সুপারিশ নয়। মাটির ধরন, জাত ও স্থানীয় কৃষি কর্মকর্তার পরামর্শ অনুযায়ী চূড়ান্ত মাত্রা নির্ধারণ করুন।</p>
 <a href="https://www.bamis.gov.bd/en/croppnp/1/all/8/" target="_blank" rel="noopener">BAMIS-এর মূল ভুট্টা উৎপাদন প্যাকেজ</a></div>
-<div class="cards">
-<article class="card"><h2>🌾 ধান</h2><p>মৌসুম, জাত ও জমির ধরন অনুযায়ী সরকারি সুপারিশ যাচাই চলছে।</p></article>
-<article class="card"><h2>🌿 গম</h2><p>মৌসুম ও স্থানীয় মাটির অবস্থা অনুযায়ী তথ্য যাচাই চলছে।</p></article>
-<article class="card"><h2>🥔 আলু</h2><p>জাত ও উৎপাদন মৌসুমভিত্তিক সরকারি সুপারিশ যাচাই চলছে।</p></article></div>
+<div class="card"><h2>🌾 বোরো ধান — সরকারি সার সুপারিশ</h2>
+<p><b>উৎস:</b> DAE BAMIS, বোরো ধান উৎপাদন প্যাকেজ।</p>
+<table><thead><tr><th>জমির ধরন</th><th>ইউরিয়া</th><th>TSP</th><th>MP</th><th>জিপসাম</th><th>জিংক সালফেট</th><th>একক</th></tr></thead><tbody>
+<tr><td>নিচু জমি, দীর্ঘমেয়াদি</td><td>40</td><td>13</td><td>22</td><td>15</td><td>1.5</td><td>কেজি/বিঘা</td></tr>
+<tr><td>মাঝারি জমি, স্বল্পমেয়াদি</td><td>35</td><td>12</td><td>20</td><td>15</td><td>1.5</td><td>কেজি/বিঘা</td></tr>
+<tr><td>হাওর অঞ্চল</td><td>27</td><td>12</td><td>22</td><td>8</td><td>1.5</td><td>কেজি/বিঘা</td></tr></tbody></table>
+<p class="fine">ইউরিয়া ৩ কিস্তিতে প্রয়োগের নির্দেশনাও BAMIS প্যাকেজে দেওয়া আছে। জমির ধরন, জাত ও স্থানীয় পরামর্শ অনুযায়ী প্রয়োগ করুন।</p>
+<a href="https://www.bamis.gov.bd/en/croppnp/1/all/75/" target="_blank" rel="noopener">মূল বোরো ধান প্যাকেজ</a></div>
+<div class="card"><h2>🌿 গম — সরকারি সার সুপারিশ</h2><p><b>উৎস:</b> DAE BAMIS, গম উৎপাদন প্যাকেজ।</p>
+<table><thead><tr><th>সার</th><th>মাত্রা</th><th>একক</th></tr></thead><tbody>
+<tr><td>ইউরিয়া (জমি তৈরির সময়)</td><td>150–175</td><td>কেজি/হেক্টর</td></tr>
+<tr><td>TSP</td><td>135–150</td><td>কেজি/হেক্টর</td></tr>
+<tr><td>পটাশ</td><td>100–110</td><td>কেজি/হেক্টর</td></tr>
+<tr><td>জিপসাম</td><td>110–125</td><td>কেজি/হেক্টর</td></tr>
+<tr><td>জিংক সালফেট</td><td>12.5</td><td>কেজি/হেক্টর</td></tr>
+<tr><td>বোরিক অ্যাসিড</td><td>6.5</td><td>কেজি/হেক্টর</td></tr>
+<tr><td>ইউরিয়া (৩ পাতার পর্যায়ে, সেচের সঙ্গে)</td><td>75–90</td><td>কেজি/হেক্টর</td></tr></tbody></table>
+<a href="https://www.bamis.gov.bd/en/croppnp/1/all/9/" target="_blank" rel="noopener">মূল গম প্যাকেজ</a></div>
+<div class="card"><h2>🥔 আলু — সরকারি সার সুপারিশ</h2><p><b>উৎস:</b> DAE BAMIS কৃষি আবহাওয়া বুলেটিনে প্রকাশিত আলু নির্দেশনা; জাতভেদে মাত্রা পরিবর্তন হতে পারে।</p>
+<table><thead><tr><th>সার</th><th>মাত্রা</th><th>একক</th></tr></thead><tbody>
+<tr><td>ইউরিয়া</td><td>160–175</td><td>কেজি/হেক্টর</td></tr>
+<tr><td>TSP</td><td>200–220</td><td>কেজি/হেক্টর</td></tr>
+<tr><td>MOP</td><td>250–300</td><td>কেজি/হেক্টর</td></tr>
+<tr><td>জিপসাম</td><td>100–120</td><td>কেজি/হেক্টর</td></tr>
+<tr><td>জিংক সালফেট</td><td>8–10</td><td>কেজি/হেক্টর</td></tr>
+<tr><td>বোরিক অ্যাসিড</td><td>6–9</td><td>কেজি/হেক্টর</td></tr></tbody></table>
+<p class="fine">প্রাথমিক/বেসাল প্রয়োগের নির্দেশনা। ইউরিয়ার টপ ড্রেসিংয়ের জন্য BAMIS বুলেটিনে রোপণের ৩০–৩৫ দিন পর ১৬০–১৭৫ কেজি/হেক্টর উল্লেখ আছে; জাত ও নির্দেশনা মিলিয়ে নিন।</p>
+<a href="https://www.bamis.gov.bd/en/bulletin/view/38262/" target="_blank" rel="noopener">BAMIS আলু নির্দেশনা</a></div>
 <h2>সরকারি তথ্যসূত্র</h2><ul>
 <li><a href="https://portal.cropzoning.gov.bd/" target="_blank" rel="noopener">BARC কৃষি পরামর্শক বাতায়ন / Crop Zoning</a></li>
 <li><a href="https://portal.cropzoning.gov.bd/cropSuitability" target="_blank" rel="noopener">উপজেলাভিত্তিক ফসলের উপযোগিতা</a></li>
 <li><a href="https://apps.barc.gov.bd/fertilizer_recommendation/FRG%20English%2030.10.2024.pdf" target="_blank" rel="noopener">BARC Fertilizer Recommendation Guide 2024 (PDF)</a></li>
 <li><a href="https://www.bamis.gov.bd/" target="_blank" rel="noopener">DAE BAMIS — ফসল উৎপাদন প্যাকেজ ও কৃষি পরামর্শ</a></li>
 </ul>
-<p class="fine"><b>ডেটার অবস্থা:</b> প্রথম সরকারি রেকর্ড যুক্ত হয়েছে (ভুট্টা)। ধান, গম, আলু ও অন্যান্য ফসলের জন্য উৎসভিত্তিক যাচাই করে ধাপে ধাপে ডেটা যুক্ত করা হবে। রায়পুরার জমির নির্দিষ্ট ডোজের জন্য খামারি অ্যাপ/স্থানীয় কৃষি কর্মকর্তার মাটি- ও জমিভিত্তিক সুপারিশ প্রাধান্য পাবে।</p>
+<p class="fine"><b>ডেটার অবস্থা:</b> ভুট্টা, বোরো ধান, গম ও আলুর প্রাথমিক সরকারি সুপারিশ যুক্ত হয়েছে। এগুলো জাতীয়/মৌসুমভিত্তিক প্যাকেজ বা BAMIS নির্দেশনা; রায়পুরার নির্দিষ্ট জমির মাটি-পরীক্ষাভিত্তিক ডোজ নয়। স্থানীয় কৃষি কর্মকর্তার পরামর্শ এবং মাটি পরীক্ষার ফল প্রাধান্য পাবে। রায়পুরার জমির নির্দিষ্ট ডোজের জন্য খামারি অ্যাপ/স্থানীয় কৃষি কর্মকর্তার মাটি- ও জমিভিত্তিক সুপারিশ প্রাধান্য পাবে।</p>
 <a class="btn primary" href="/agri">কৃষি সহায়কে ফিরুন</a>"""
     return shell("সরকারি সার সুপারিশ", body)
 
