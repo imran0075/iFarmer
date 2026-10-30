@@ -88,21 +88,39 @@ def official_data():
 @router.get("/agri/weather", response_class=HTMLResponse)
 def weather_form():
     opts = "".join(f'<option>{html.escape(c)}</option>' for c in CITIES)
-    return shell("আবহাওয়া", f"""<h1>জেলার আবহাওয়া</h1><form class="form card" method="post"><label>জেলা/এলাকা<select name="city">{opts}</select></label><button class="btn primary">আজকের আবহাওয়া দেখুন</button></form><p class="fine">তথ্য Open-Meteo আবহাওয়া সেবা থেকে আসে। এটি পূর্বাভাস; স্থানীয় মাঠের অবস্থা ভিন্ন হতে পারে।</p>""")
+    return shell("আবহাওয়া", f"""<div class="eyebrow">দৈনিক আবহাওয়া বার্তা</div><h1>জেলার আবহাওয়া</h1><form class="form card" method="post"><label>জেলা/এলাকা<select name="city">{opts}</select></label><button class="btn primary">আবহাওয়া বার্তা দেখুন</button></form><p class="fine">প্রতিবার দেখার সময় Open-Meteo থেকে নতুন তথ্য আনা হয়। ৭ দিনের পূর্বাভাস ও কৃষিকাজের সাধারণ সতর্কতা দেখুন। তথ্য পেতে ইন্টারনেট সংযোগ প্রয়োজন।</p>""")
 
 @router.post("/agri/weather", response_class=HTMLResponse)
 def weather_result(city: str=Form(...)):
     if city not in CITIES: raise HTTPException(400, "এলাকা নির্বাচন করুন")
     lat, lon = CITIES[city]
-    query = urlencode({"latitude":lat,"longitude":lon,"current":"temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m","daily":"precipitation_probability_max,temperature_2m_max,temperature_2m_min","timezone":"Asia/Dhaka","forecast_days":1})
+    query = urlencode({
+        "latitude":lat,"longitude":lon,
+        "current":"temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m",
+        "daily":"weather_code,precipitation_probability_max,precipitation_sum,temperature_2m_max,temperature_2m_min",
+        "timezone":"Asia/Dhaka","forecast_days":7
+    })
     try:
-        with urlopen("https://api.open-meteo.com/v1/forecast?"+query, timeout=8) as r: data=json.loads(r.read().decode())
+        with urlopen("https://api.open-meteo.com/v1/forecast?"+query, timeout=12) as r:
+            data=json.loads(r.read().decode())
         cur=data["current"]; day=data["daily"]
-        rain=day["precipitation_probability_max"][0]
-        advice="বৃষ্টির সম্ভাবনা বেশি—সেচ ও স্প্রে করার আগে স্থানীয় আকাশের অবস্থা দেখুন।" if rain >= 60 else "বৃষ্টির সম্ভাবনা তুলনামূলক কম। জমির আর্দ্রতা দেখে সেচ দিন।"
-        body=f"""<h1>{html.escape(city)}: আজকের আবহাওয়া</h1><div class="card"><h2>{cur['temperature_2m']}°C</h2><p>আর্দ্রতা: {cur['relative_humidity_2m']}%</p><p>বর্তমান বৃষ্টিপাত: {cur['precipitation']} মিমি</p><p>বাতাস: {cur['wind_speed_10m']} কিমি/ঘণ্টা</p><p>সর্বোচ্চ/সর্বনিম্ন: {day['temperature_2m_max'][0]}° / {day['temperature_2m_min'][0]}°C</p><p>বৃষ্টির সম্ভাবনা: {rain}%</p><b>{advice}</b></div><p class="fine">আবহাওয়ার তথ্য {html.escape(cur['time'])} সময়ের। কৃষিকাজের সিদ্ধান্তের আগে স্থানীয় পূর্বাভাস যাচাই করুন।</p><a href="/agri/weather">অন্য এলাকা</a>"""
+        rain=day["precipitation_probability_max"][0] or 0
+        advice="বৃষ্টির সম্ভাবনা বেশি—সেচের আগে জমির অবস্থা দেখুন এবং স্প্রে করার সময় বৃষ্টি/বাতাসের নির্দেশনা মানুন।" if rain >= 60 else "বৃষ্টির সম্ভাবনা কম। জমির আর্দ্রতা ও ফসলের অবস্থা দেখে সেচ দিন।"
+        weather_labels={0:"পরিষ্কার",1:"মূলত পরিষ্কার",2:"আংশিক মেঘলা",3:"মেঘলা",45:"কুয়াশা",48:"ঘন কুয়াশা",51:"হালকা গুঁড়ি বৃষ্টি",53:"গুঁড়ি বৃষ্টি",55:"ঘন গুঁড়ি বৃষ্টি",61:"হালকা বৃষ্টি",63:"মাঝারি বৃষ্টি",65:"ভারী বৃষ্টি",71:"হালকা তুষার",80:"হালকা বৃষ্টির ঝাপটা",81:"মাঝারি বৃষ্টির ঝাপটা",82:"ভারী বৃষ্টির ঝাপটা",95:"বজ্রসহ বৃষ্টি"}
+        forecast_rows=[]
+        for i, date in enumerate(day["time"]):
+            code=day["weather_code"][i]
+            label=weather_labels.get(code,"পরিবর্তনশীল আবহাওয়া")
+            p=day["precipitation_probability_max"][i]
+            p="তথ্য নেই" if p is None else f"{p}%"
+            forecast_rows.append(f"<tr><td>{html.escape(date)}</td><td>{html.escape(label)}</td><td>{day['temperature_2m_min'][i]}°–{day['temperature_2m_max'][i]}°C</td><td>{p}</td><td>{day['precipitation_sum'][i]} মিমি</td></tr>")
+        rows="".join(forecast_rows)
+        body=f"""<h1>{html.escape(city)}: আবহাওয়া বার্তা</h1>
+<div class="card"><h2>এখন {cur['temperature_2m']}°C</h2><p>আর্দ্রতা: {cur['relative_humidity_2m']}%</p><p>বর্তমান বৃষ্টিপাত: {cur['precipitation']} মিমি</p><p>বাতাস: {cur['wind_speed_10m']} কিমি/ঘণ্টা</p><b>{advice}</b></div>
+<h2>আগামী ৭ দিনের পূর্বাভাস</h2><div class="card"><table><thead><tr><th>তারিখ</th><th>আবহাওয়া</th><th>তাপমাত্রা</th><th>বৃষ্টির সম্ভাবনা</th><th>বৃষ্টির পরিমাণ</th></tr></thead><tbody>{rows}</tbody></table></div>
+<p class="fine">সর্বশেষ তথ্য: {html.escape(cur['time'])} (বাংলাদেশ সময়)। এই বার্তা Open-Meteo পূর্বাভাসের ওপর ভিত্তি করে; স্থানীয় মাঠের অবস্থা ভিন্ন হতে পারে। কৃষিকাজের সিদ্ধান্তের আগে স্থানীয় পূর্বাভাস/কৃষি কর্মকর্তার পরামর্শ যাচাই করুন।</p><a class="btn primary" href="/agri/weather">অন্য জেলা দেখুন</a>"""
     except Exception:
-        body="<h1>এখন আবহাওয়ার তথ্য পাওয়া যাচ্ছে না</h1><p>ইন্টারনেট সংযোগ বা আবহাওয়া সেবা পরে আবার চেষ্টা করুন।</p><a href='/agri/weather'>আবার চেষ্টা করুন</a>"
+        body="<h1>আবহাওয়ার তথ্য এখন পাওয়া যাচ্ছে না</h1><p>সার্ভার বা আবহাওয়া সেবার সংযোগে সমস্যা হতে পারে। ইন্টারনেট সংযোগ পরীক্ষা করে কিছুক্ষণ পর আবার চেষ্টা করুন।</p><a class='btn primary' href='/agri/weather'>আবার চেষ্টা করুন</a>"
     return shell("আবহাওয়ার ফলাফল", body)
 
 def calc_form(kind):
