@@ -19,6 +19,8 @@ ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
 SECRET_KEY = os.getenv("SECRET_KEY", "")
 COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"
 
+from agriculture import router as agriculture_router
+
 app = FastAPI(title="iFarmer", docs_url=None, redoc_url=None)
 if not SECRET_KEY:
     # For local development only. Configure a stable secret in .env for deployment.
@@ -84,6 +86,7 @@ def init_db():
             id {primary_key}, order_id INTEGER NOT NULL UNIQUE,
             product_id INTEGER NOT NULL, partner_request_id INTEGER NOT NULL)""")
 init_db()
+app.include_router(agriculture_router)
 
 def log_action(actor, action, item_type, item_id=None):
     with db() as c:
