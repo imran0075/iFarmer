@@ -122,6 +122,7 @@ def page(title, body, active=""):
 <header class="top"><a class="brand" href="/"><span class="logo">🌱</span><span>iFarmer</span></a>
 <nav><a href="/#products">পণ্য</a><a href="/#order">অর্ডার</a><a href="/track-order">অর্ডার ট্র্যাক</a><a href="/partner">পার্টনার হোন</a></nav></header>
 {body}
+<nav class="mobile-dock" aria-label="প্রধান মেনু"><a href="/">⌂<span>হোম</span></a><a href="/#products">▦<span>পণ্য</span></a><a href="/#order">＋<span>অর্ডার</span></a><a href="/partner/login">♙<span>প্রোফাইল</span></a></nav>
 <footer><b>iFarmer</b><p>কৃষির ডিজিটাল সহযাত্রী</p><div><a href="/privacy">গোপনীয়তা</a> · <a href="/terms">শর্তাবলি</a> · <a href="/admin">মালিক লগইন</a></div>
 <small>© {datetime.now().year} iFarmer</small></footer></body></html>"""
 
