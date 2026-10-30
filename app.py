@@ -118,21 +118,31 @@ def page(title, body, active=""):
 
 @app.get("/", response_class=HTMLResponse)
 def home():
-    body = """
+    with db() as c:
+        products = c.execute(sql_placeholders("""SELECT pp.name,pp.price,pp.unit,pp.description,
+            pr.shop_name,pr.area FROM partner_products pp
+            JOIN partner_requests pr ON pr.id=pp.partner_request_id
+            WHERE pp.status='সক্রিয়' AND pr.status='অনুমোদিত'
+            ORDER BY pp.id DESC LIMIT 60""")).fetchall()
+    product_cards = ''.join(
+        f'<article class="card"><div class="card-icon">🛒</div><h3>{esc(p["name"])}</h3>'
+        f'<p><b>{esc(p["price"])} টাকা / {esc(p["unit"])}</b></p>'
+        f'<p>{esc(p["description"])}</p><p class="fine">বিক্রেতা: {esc(p["shop_name"])} · {esc(p["area"])}</p>'
+        f'<a class="btn primary" href="#order">অর্ডারের অনুরোধ</a></article>' for p in products
+    )
+    if not product_cards:
+        product_cards = '<article class="card"><div class="card-icon">🌱</div><h3>পণ্য শিগগিরই আসছে</h3><p>অনুমোদিত পার্টনাররা পণ্য প্রকাশ করলে এখানে দেখা যাবে।</p></article>'
+    body = f"""
 <main>
 <section class="hero">
 <div class="pill">কৃষির ডিজিটাল সহযাত্রী</div><h1>কৃষি পণ্য ও সেবা,<br><span>এখন আরও সহজে</span></h1>
 <p>কৃষকের প্রয়োজনীয় পণ্য খুঁজুন, অর্ডারের অনুরোধ পাঠান এবং স্থানীয় কৃষি সেবার সঙ্গে যুক্ত থাকুন।</p>
-<div class="actions"><a class="btn primary" href="#order">অর্ডার করুন</a><a class="btn light" href="/partner">পার্টনার হোন</a></div>
+<div class="actions"><a class="btn primary" href="#products">পণ্য দেখুন</a><a class="btn light" href="/partner">পার্টনার হোন</a></div>
 <div class="hero-note">সহজ অর্ডার · ফোনে নিশ্চিতকরণ · ডেলিভারির নিয়ম বিক্রেতার সঙ্গে নিশ্চিত করুন</div>
 </section>
 <section class="stats"><div><b>🌾</b><span>কৃষি পণ্য</span></div><div><b>🛒</b><span>সহজ অর্ডার</span></div><div><b>📞</b><span>ফোনে নিশ্চিতকরণ</span></div><div><b>🏪</b><span>স্থানীয় পার্টনার</span></div></section>
-<section id="products" class="section"><div class="section-head"><div><div class="eyebrow">iFarmer মার্কেটপ্লেস</div><h2>কৃষির প্রয়োজনীয় সেবা</h2></div><p>পণ্যের প্রাপ্যতা, দাম ও ব্যবহার বিক্রেতার সঙ্গে নিশ্চিত করুন।</p></div>
-<div class="cards">
-<article class="card"><div class="card-icon">🌱</div><h3>ফসলের যত্ন</h3><p>ফসলভিত্তিক পণ্য ও পরিচর্যা-সংক্রান্ত তথ্যের সহায়তা।</p></article>
-<article class="card"><div class="card-icon">🧺</div><h3>বীজ ও কৃষি উপকরণ</h3><p>আপনার প্রয়োজন জানিয়ে অর্ডারের অনুরোধ পাঠান।</p></article>
-<article class="card"><div class="card-icon">🚚</div><h3>ডেলিভারি</h3><p>এলাকা ও ডেলিভারি শর্ত ফোনে নিশ্চিত করুন।</p></article>
-</div></section>
+<section id="products" class="section"><div class="section-head"><div><div class="eyebrow">iFarmer মার্কেটপ্লেস</div><h2>পার্টনারদের পণ্য</h2></div><p>পণ্যের প্রাপ্যতা, দাম ও ব্যবহার বিক্রেতার সঙ্গে নিশ্চিত করুন।</p></div>
+<div class="cards">{product_cards}</div></section>
 <section id="order" class="section order-section"><div class="section-head"><div><div class="eyebrow">অর্ডার রিকোয়েস্ট</div><h2>আপনার অর্ডারের তথ্য দিন</h2></div><p>ফর্ম পাঠানোর পর বিক্রেতা আপনার সঙ্গে যোগাযোগ করবেন।</p></div>
 <form class="form card" method="post" action="/order">
 <div class="form-grid">
