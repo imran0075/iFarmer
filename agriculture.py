@@ -88,7 +88,27 @@ def official_data():
 @router.get("/agri/weather", response_class=HTMLResponse)
 def weather_form():
     opts = "".join(f'<option>{html.escape(c)}</option>' for c in CITIES)
-    return shell("আবহাওয়া", f"""<div class="eyebrow">দৈনিক আবহাওয়া বার্তা</div><h1>জেলার আবহাওয়া</h1><form class="form card" method="post"><label>জেলা/এলাকা<select name="city">{opts}</select></label><button class="btn primary">আবহাওয়া বার্তা দেখুন</button></form><p class="fine">প্রতিবার দেখার সময় Open-Meteo থেকে নতুন তথ্য আনা হয়। ৭ দিনের পূর্বাভাস ও কৃষিকাজের সাধারণ সতর্কতা দেখুন। তথ্য পেতে ইন্টারনেট সংযোগ প্রয়োজন।</p>""")
+    return shell("আবহাওয়া", f"""<div class="eyebrow">দৈনিক আবহাওয়া বার্তা</div><h1>আপনার এলাকার আবহাওয়া</h1>
+<div class="card"><p>ফোনের অবস্থান ব্যবহার করে স্বয়ংক্রিয়ভাবে আপনার এলাকার অবস্থান শনাক্ত করুন।</p>
+<button class="btn primary" type="button" onclick="detectMyLocation()">📍 আমার অবস্থান শনাক্ত করুন</button>
+<p id="gps-status" class="fine" role="status" aria-live="polite">বোতামে চাপ দিলে Chrome লোকেশন ব্যবহারের অনুমতি চাইবে।</p></div>
+<form class="form card" method="post"><label>জেলা/এলাকা<select name="city">{opts}</select></label><button class="btn primary">জেলার আবহাওয়া দেখুন</button></form>
+<p class="fine">লোকেশন শুধু এই পাতায় আপনার অবস্থান শনাক্ত করার জন্য ব্রাউজার থেকে চাওয়া হবে। অনুমতি না দিলেও জেলা নির্বাচন করে আবহাওয়া দেখা যাবে।</p>
+<script>
+function detectMyLocation() {
+  const status = document.getElementById('gps-status');
+  if (!navigator.geolocation) { status.textContent = 'আপনার ব্রাউজারে GPS লোকেশন সুবিধা নেই।'; return; }
+  status.textContent = 'আপনার অবস্থান জানতে অনুমতি চাওয়া হচ্ছে…';
+  navigator.geolocation.getCurrentPosition(function(position) {
+    const lat = position.coords.latitude.toFixed(5);
+    const lon = position.coords.longitude.toFixed(5);
+    status.textContent = 'অবস্থান শনাক্ত হয়েছে। অক্ষাংশ: ' + lat + ', দ্রাঘিমাংশ: ' + lon + '। স্বয়ংক্রিয় আবহাওয়া দেখানোর পরবর্তী ধাপ এখনো যুক্ত করা বাকি।';
+  }, function(error) {
+    const messages = {1:'লোকেশন অনুমতি দেওয়া হয়নি। Chrome Site settings থেকে Location → Allow করুন।',2:'ফোনের অবস্থান পাওয়া যাচ্ছে না। ফোনের Location চালু করুন।',3:'লোকেশন পেতে সময় শেষ হয়েছে। আবার চেষ্টা করুন।'};
+    status.textContent = messages[error.code] || 'লোকেশন পাওয়া যায়নি। আবার চেষ্টা করুন.';
+  }, {enableHighAccuracy:true, timeout:15000, maximumAge:60000});
+}
+</script>""")
 
 @router.post("/agri/weather", response_class=HTMLResponse)
 def weather_result(city: str=Form(...)):
