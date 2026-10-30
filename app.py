@@ -157,9 +157,7 @@ def home():
 <div class="form-grid">
 <label>আপনার নাম<input name="name" required maxlength="100" placeholder="পূর্ণ নাম"></label>
 <label>মোবাইল নম্বর<input name="phone" required inputmode="tel" maxlength="30" placeholder="01XXXXXXXXX"></label>
-<label>পণ্যের নাম<input name="product" required maxlength="160" placeholder="যে পণ্য প্রয়োজন"></label>
-<label>পরিমাণ<input name="quantity" required maxlength="80" placeholder="যেমন: ৫ প্যাকেট"></label>
-<label>পণ্য নির্বাচন<select id="order-product" name="product_id" required><option value="">পণ্য নির্বাচন করুন</option>{''.join(f'<option value="{p["id"]}">{esc(p["name"])} — {esc(p["price"])} টাকা / {esc(p["unit"])} · {esc(p["shop_name"])}</option>' for p in products)}</select></label>
+<label class="wide">পণ্য নির্বাচন<select id="order-product" name="product_id" required><option value="">পণ্য নির্বাচন করুন</option>{''.join(f'<option value="{p["id"]}">{esc(p["name"])} — {esc(p["price"])} টাকা / {esc(p["unit"])} · {esc(p["shop_name"])}</option>' for p in products)}</select></label>
 <label>পরিমাণ<input name="quantity" required maxlength="80" placeholder="যেমন: ৫ প্যাকেট"></label>
 <label class="wide">ডেলিভারি ঠিকানা<input name="address" required maxlength="300" placeholder="গ্রাম, বাজার, উপজেলা, জেলা"></label>
 <label>পেমেন্ট পদ্ধতি<select name="payment"><option value="ক্যাশ অন ডেলিভারি">ক্যাশ অন ডেলিভারি (অনুরোধ)</option><option value="ফোনে আলোচনা">ফোনে আলোচনা করে ঠিক করব</option></select></label>
@@ -284,6 +282,9 @@ def partner_dashboard(request: Request):
     with db() as c:
         partner = c.execute(sql_placeholders("SELECT * FROM partner_requests WHERE id=?"), (partner_id,)).fetchone()
         products = c.execute(sql_placeholders("SELECT * FROM partner_products WHERE partner_request_id=? ORDER BY id DESC LIMIT 100"), (partner_id,)).fetchall()
+        orders = c.execute(sql_placeholders("""SELECT o.* FROM orders o
+            JOIN order_product_links l ON l.order_id=o.id
+            WHERE l.partner_request_id=? ORDER BY o.id DESC LIMIT 100"""), (partner_id,)).fetchall()
     if not partner or partner["status"] != "অনুমোদিত":
         request.session.pop("partner_id", None)
         return RedirectResponse("/partner/login", status_code=303)
@@ -295,8 +296,30 @@ def partner_dashboard(request: Request):
     body = f"""<main class="admin-main"><div class="admin-head"><div><div class="eyebrow">iFarmer PARTNER</div><h1>পার্টনার ড্যাশবোর্ড</h1><p>{esc(partner['shop_name'])} · {esc(partner['subdomain'])}</p></div><form method="post" action="/partner/logout"><button class="btn light">লগআউট</button></form></div>
 <div class="stats admin-stats"><div><b>{len(products)}</b><span>পণ্য তালিকা</span></div><div><b>{esc(partner['area'])}</b><span>ব্যবসার এলাকা</span></div></div>
 <section class="admin-section"><h2>নতুন পণ্য যোগ করুন</h2><form class="form card" method="post" action="/partner/product" enctype="multipart/form-data"><div class="form-grid"><label>পণ্যের নাম<input name="name" required maxlength="140"></label><label class="wide">পণ্যের ছবি (JPG, PNG বা WebP; সর্বোচ্চ ৪ MB)<input type="file" name="image" accept="image/jpeg,image/png,image/webp"></label><label>দাম (টাকা)<input name="price" required maxlength="30" inputmode="decimal" placeholder="যেমন: ২৫০"></label><label>একক<input name="unit" required maxlength="40" placeholder="যেমন: প্যাকেট / কেজি"></label><label class="wide">বিবরণ<textarea name="description" maxlength="400"></textarea></label></div><button class="btn primary" type="submit">পণ্য যোগ করুন</button></form></section>
-<section class="admin-section"><h2>আমার পণ্য</h2><div class="table-wrap"><table><thead><tr><th>পণ্য</th><th>দাম</th><th>অবস্থা</th><th>কাজ</th></tr></thead><tbody>{''.join(product_row(p) for p in products) or '<tr><td colspan="4">এখনো পণ্য যোগ করা হয়নি।</td></tr>'}</tbody></table></div><p class="fine">এখান থেকে পণ্যের তথ্য ও ছবি পরিবর্তন, পণ্য সাময়িক বন্ধ/চালু এবং স্থায়ীভাবে মুছে ফেলা যাবে।</p></section></main>"""
+<section class="admin-section"><h2>আমার পণ্য</h2><div class="table-wrap"><table><thead><tr><th>পণ্য</th><th>দাম</th><th>অবস্থা</th><th>কাজ</th></tr></thead><tbody>{''.join(product_row(p) for p in products) or '<tr><td colspan="4">এখনো পণ্য যোগ করা হয়নি।</td></tr>'}</tbody></table></div><p class="fine">এখান থেকে পণ্যের তথ্য ও ছবি পরিবর্তন, পণ্য সাময়িক বন্ধ/চালু এবং স্থায়ীভাবে মুছে ফেলা যাবে।</p></section>
+<section class="admin-section" id="partner-orders"><h2>আমার অর্ডার</h2>
+<div class="table-wrap"><table><thead><tr><th>অর্ডার / সময়</th><th>ক্রেতা</th><th>পণ্য ও পরিমাণ</th><th>পেমেন্ট / নোট</th><th>স্ট্যাটাস পরিবর্তন</th></tr></thead><tbody>{''.join(f"""<tr><td><b>IF-{o['id']:05d}</b><br><small>{esc(o['created_at'])}</small></td><td><b>{esc(o['name'])}</b><br><a href="tel:{esc(o['phone'])}">{esc(o['phone'])}</a><br>{esc(o['address'])}</td><td>{esc(o['product'])}<br>পরিমাণ: {esc(o['quantity'])}</td><td>{esc(o['payment'])}<br><small>{esc(o['notes'])}</small></td><td><form method="post" action="/partner/order-status"><input type="hidden" name="order_id" value="{o['id']}"><select name="status">{''.join(f'<option {"selected" if o["status"]==st else ""}>{st}</option>' for st in ["নতুন","ফোনে যোগাযোগ করতে হবে","নিশ্চিত","প্রসেসিং","ডেলিভারির পথে","সম্পন্ন","বাতিল"])}</select><button class="mini">আপডেট</button></form></td></tr>""" for o in orders) or '<tr><td colspan="5">এখনো কোনো অর্ডার আসেনি।</td></tr>'}</tbody></table></div>
+<p class="fine">শুধু আপনার দোকানের পণ্যের অর্ডার এখানে দেখানো হয়। ক্রেতার সঙ্গে ফোনে যোগাযোগ করে অর্ডার নিশ্চিত করুন।</p></section></main>"""
     return page("পার্টনার ড্যাশবোর্ড", body)
+
+@app.post("/partner/order-status")
+def partner_order_status(request: Request, order_id: int=Form(...), status: str=Form(...)):
+    partner_id = request.session.get("partner_id")
+    if not partner_id:
+        return RedirectResponse("/partner/login", status_code=303)
+    allowed = ["নতুন","ফোনে যোগাযোগ করতে হবে","নিশ্চিত","প্রসেসিং","ডেলিভারির পথে","সম্পন্ন","বাতিল"]
+    if status not in allowed:
+        raise HTTPException(400, "অবৈধ স্ট্যাটাস।")
+    with db() as c:
+        owned = c.execute(sql_placeholders("""SELECT o.id FROM orders o
+            JOIN order_product_links l ON l.order_id=o.id
+            WHERE o.id=? AND l.partner_request_id=?"""), (order_id, partner_id)).fetchone()
+        if not owned:
+            raise HTTPException(404, "আপনার দোকানের এই অর্ডারটি পাওয়া যায়নি।")
+        c.execute(sql_placeholders("UPDATE orders SET status=? WHERE id=?"), (status, order_id))
+    log_action("partner:"+str(partner_id), "order_status:"+status, "order", order_id)
+    return RedirectResponse("/partner/dashboard#partner-orders", status_code=303)
+
 
 @app.get("/partner/product/{product_id}/edit", response_class=HTMLResponse)
 def partner_product_edit(request: Request, product_id: int):
