@@ -74,6 +74,9 @@ def init_db():
             name TEXT NOT NULL, price TEXT NOT NULL, unit TEXT NOT NULL,
             description TEXT DEFAULT '', status TEXT NOT NULL DEFAULT 'সক্রিয়',
             created_at TEXT NOT NULL)""")
+        c.execute(f"""CREATE TABLE IF NOT EXISTS order_product_links(
+            id {primary_key}, order_id INTEGER NOT NULL UNIQUE,
+            product_id INTEGER NOT NULL, partner_request_id INTEGER NOT NULL)""")
 init_db()
 
 def log_action(actor, action, item_type, item_id=None):
@@ -119,7 +122,7 @@ def page(title, body, active=""):
 @app.get("/", response_class=HTMLResponse)
 def home():
     with db() as c:
-        products = c.execute(sql_placeholders("""SELECT pp.name,pp.price,pp.unit,pp.description,
+        products = c.execute(sql_placeholders("""SELECT pp.id,pp.name,pp.price,pp.unit,pp.description,
             pr.shop_name,pr.area FROM partner_products pp
             JOIN partner_requests pr ON pr.id=pp.partner_request_id
             WHERE pp.status='সক্রিয়' AND pr.status='অনুমোদিত'
@@ -128,7 +131,7 @@ def home():
         f'<article class="card"><div class="card-icon">🛒</div><h3>{esc(p["name"])}</h3>'
         f'<p><b>{esc(p["price"])} টাকা / {esc(p["unit"])}</b></p>'
         f'<p>{esc(p["description"])}</p><p class="fine">বিক্রেতা: {esc(p["shop_name"])} · {esc(p["area"])}</p>'
-        f'<a class="btn primary" href="#order">অর্ডারের অনুরোধ</a></article>' for p in products
+        f'<a class="btn primary" href="#order" onclick="document.getElementById(\'order-product\').value=\'{p["id"]}\'">এই পণ্য অর্ডার করুন</a></article>' for p in products
     )
     if not product_cards:
         product_cards = '<article class="card"><div class="card-icon">🌱</div><h3>পণ্য শিগগিরই আসছে</h3><p>অনুমোদিত পার্টনাররা পণ্য প্রকাশ করলে এখানে দেখা যাবে।</p></article>'
@@ -150,6 +153,8 @@ def home():
 <label>মোবাইল নম্বর<input name="phone" required inputmode="tel" maxlength="30" placeholder="01XXXXXXXXX"></label>
 <label>পণ্যের নাম<input name="product" required maxlength="160" placeholder="যে পণ্য প্রয়োজন"></label>
 <label>পরিমাণ<input name="quantity" required maxlength="80" placeholder="যেমন: ৫ প্যাকেট"></label>
+<label>পণ্য নির্বাচন<select id="order-product" name="product_id" required><option value="">পণ্য নির্বাচন করুন</option>{''.join(f'<option value="{p["id"]}">{esc(p["name"])} — {esc(p["price"])} টাকা / {esc(p["unit"])} · {esc(p["shop_name"])}</option>' for p in products)}</select></label>
+<label>পরিমাণ<input name="quantity" required maxlength="80" placeholder="যেমন: ৫ প্যাকেট"></label>
 <label class="wide">ডেলিভারি ঠিকানা<input name="address" required maxlength="300" placeholder="গ্রাম, বাজার, উপজেলা, জেলা"></label>
 <label>পেমেন্ট পদ্ধতি<select name="payment"><option value="ক্যাশ অন ডেলিভারি">ক্যাশ অন ডেলিভারি (অনুরোধ)</option><option value="ফোনে আলোচনা">ফোনে আলোচনা করে ঠিক করব</option></select></label>
 <label>অতিরিক্ত তথ্য<input name="notes" maxlength="300" placeholder="ঐচ্ছিক"></label>
@@ -162,8 +167,16 @@ def home():
 
 @app.post("/order", response_class=HTMLResponse)
 def create_order(name: str=Form(...), phone: str=Form(...), address: str=Form(...),
-                 product: str=Form(...), quantity: str=Form(...),
+                 product_id: int=Form(...), quantity: str=Form(...),
                  payment: str=Form("ক্যাশ অন ডেলিভারি"), notes: str=Form("")):
+    with db() as c:
+        selected = c.execute(sql_placeholders("""SELECT pp.id,pp.name,pp.price,pp.unit,
+            pr.id AS partner_id,pr.shop_name FROM partner_products pp
+            JOIN partner_requests pr ON pr.id=pp.partner_request_id
+            WHERE pp.id=? AND pp.status='সক্রিয়' AND pr.status='অনুমোদিত'"""), (product_id,)).fetchone()
+    if not selected:
+        raise HTTPException(400, "নির্বাচিত পণ্যটি এখন অর্ডারের জন্য পাওয়া যাচ্ছে না।")
+    product = f'{selected["name"]} ({selected["shop_name"]})'
     vals = [clean(name,100), clean(phone,30), clean(address,300), clean(product,160),
             clean(quantity,80), clean(payment,50), clean(notes,300)]
     if contains_forbidden(*vals):
@@ -174,6 +187,8 @@ def create_order(name: str=Form(...), phone: str=Form(...), address: str=Form(..
         cur = c.execute(sql_placeholders("""INSERT INTO orders(name,phone,address,product,quantity,payment,notes,created_at)
         VALUES(?,?,?,?,?,?,?,?)""") + (" RETURNING id" if DATABASE_URL else ""), (*vals, now()))
         oid = cur.fetchone()["id"] if DATABASE_URL else cur.lastrowid
+        c.execute(sql_placeholders("INSERT INTO order_product_links(order_id,product_id,partner_request_id) VALUES(?,?,?)"),
+                  (oid, selected["id"], selected["partner_id"]))
     log_action("public", "order_created", "order", oid)
     body = f"""<main class="narrow"><section class="success"><div class="success-icon">✓</div><h1>অর্ডারের অনুরোধ গ্রহণ করা হয়েছে</h1>
 <p>আপনার অনুরোধ নম্বর <b>IF-{oid:05d}</b>। বিক্রেতা ফোনে যোগাযোগ করে তথ্য নিশ্চিত করতে পারেন।</p>
