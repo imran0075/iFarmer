@@ -169,6 +169,12 @@ def fertilizer_form(): return calc_form("সার হিসাব")
 @router.get("/agri/pesticide", response_class=HTMLResponse)
 def pesticide_form(): return calc_form("কীটনাশক হিসাব")
 
+
+@router.get("/agri/diagnose", response_class=HTMLResponse)
+def diagnose_form():
+    crops="".join(f"<option>{c}</option>" for c in CROPS)
+    return shell("রোগ-পোকা ছবি",f"""<h1>ফসলের রোগ-পোকার ছবি জমা দিন</h1><form class="form card" method="post" enctype="multipart/form-data"><label>ফসল<select name="crop">{crops}</select></label><label>জেলা<input name="area" maxlength="80" required placeholder="যেমন নরসিংদী"></label><label>লক্ষণ/সমস্যা<input name="symptoms" maxlength="500" placeholder="পাতায় দাগ, পোকা, পচন ইত্যাদি"></label><label>ছবি (JPG/PNG/WebP)<input type="file" name="photo" accept="image/*" required></label><button class="btn primary">ছবি জমা দিন</button></form><p class="fine">ছবি জমা দিলে AI সম্ভাব্য রোগ, পোকা, পুষ্টিঘাটতি, কারণ, করণীয় ও প্রতিরোধ বিশ্লেষণ করবে। এটি সম্ভাব্য মূল্যায়ন—নিশ্চিত রোগনির্ণয় নয়। ফ্রি ব্যবহারের সীমা শেষ হলে কোনো পেইড চার্জ ছাড়াই সেবা সাময়িক বন্ধ থাকবে।</p>""")
+
 @router.post("/agri/{kind}", response_class=HTMLResponse)
 def calculate(kind: str, crop: str=Form(...), area: float=Form(...), unit: str=Form(...), rate: float=Form(...), measure: str=Form(...)):
     if kind not in ("fertilizer","pesticide") or crop not in CROPS or unit not in UNITS or area<=0 or rate<0:
@@ -178,10 +184,6 @@ def calculate(kind: str, crop: str=Form(...), area: float=Form(...), unit: str=F
     warning = "কীটনাশকের ক্ষেত্রে শুধু সংশ্লিষ্ট ফসল ও পোকার জন্য নিবন্ধিত পণ্যের লেবেল অনুসরণ করুন। PPE, অপেক্ষাকাল (PHI), পুনঃপ্রবেশ সময় ও বাতাসের নির্দেশনা মানুন।" if kind=="pesticide" else "মাটি পরীক্ষা ও কৃষি সম্প্রসারণ অধিদপ্তরের ফসলভিত্তিক সুপারিশ মিলিয়ে নিন।"
     return shell("হিসাবের ফল",f"<h1>{label}র হিসাব</h1><div class='card'><p>ফসল: {html.escape(crop)}</p><p>জমি: {area:g} {html.escape(unit)}</p><h2>মোট প্রয়োজন: {total:.3f} {html.escape(measure)}</h2></div><p class='fine'>{warning}</p><a href='/agri'>কৃষি সহায়কে ফিরুন</a>")
 
-@router.get("/agri/diagnose", response_class=HTMLResponse)
-def diagnose_form():
-    crops="".join(f"<option>{c}</option>" for c in CROPS)
-    return shell("রোগ-পোকা ছবি",f"""<h1>ফসলের রোগ-পোকার ছবি জমা দিন</h1><form class="form card" method="post" enctype="multipart/form-data"><label>ফসল<select name="crop">{crops}</select></label><label>জেলা<input name="area" maxlength="80" required placeholder="যেমন নরসিংদী"></label><label>লক্ষণ/সমস্যা<input name="symptoms" maxlength="500" placeholder="পাতায় দাগ, পোকা, পচন ইত্যাদি"></label><label>ছবি (JPG/PNG/WebP)<input type="file" name="photo" accept="image/*" required></label><button class="btn primary">ছবি জমা দিন</button></form><p class="fine">ছবি জমা দিলে AI সম্ভাব্য রোগ, পোকা, পুষ্টিঘাটতি, কারণ, করণীয় ও প্রতিরোধ বিশ্লেষণ করবে। এটি সম্ভাব্য মূল্যায়ন—নিশ্চিত রোগনির্ণয় নয়। ফ্রি ব্যবহারের সীমা শেষ হলে কোনো পেইড চার্জ ছাড়াই সেবা সাময়িক বন্ধ থাকবে।</p>""")
 
 @router.post("/agri/diagnose", response_class=HTMLResponse)
 async def diagnose_submit(crop: str=Form(...), area: str=Form(...), symptoms: str=Form(""), photo: UploadFile=File(...)):
