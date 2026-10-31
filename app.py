@@ -162,6 +162,14 @@ def home():
 <article class="card"><div class="card-icon">🧴</div><h3>কীটনাশক ক্যালকুলেটর</h3><p>অনুমোদিত পণ্যের লেবেলে দেওয়া মাত্রা অনুযায়ী হিসাব।</p><a class="btn primary" href="/agri/pesticide">মাত্রা হিসাব করুন</a></article>
 <article class="card"><div class="card-icon">📷</div><h3>ফসলের সমস্যা</h3><p>ফসলের ছবি ও লক্ষণ জমা দিন; AI রোগ শনাক্তকরণ এখনো চালু নয়।</p><a class="btn primary" href="/agri/diagnose">ছবি জমা দিন</a></article>
 </div></section>
+<section class="section" id="agri-categories">
+<div class="section-head"><div><div class="eyebrow">এক প্ল্যাটফর্মে সব সেবা</div><h2>কৃষি, মৎস্য ও প্রাণিসম্পদ</h2></div><p>আপনার প্রয়োজনীয় বিভাগ বেছে নিয়ে সংশ্লিষ্ট পরামর্শ ও সেবা নিন।</p></div>
+<div class="cards">
+<article class="card"><div class="card-icon">🌾</div><h3>ফসল</h3><p>ধান, গম, ভুট্টা, শাকসবজি ও ফলের রোগ-পোকা এবং পরিচর্যার পরামর্শ।</p><a class="btn primary" href="/agri/diagnose">ফসল বিভাগে যান</a></article>
+<article class="card"><div class="card-icon">🐟</div><h3>মৎস্য</h3><p>মাছের চাষ, পানির গুণাগুণ, রোগ শনাক্তকরণ ও পরিচর্যার সহায়তা।</p><a class="btn primary" href="/agri/diagnose">মৎস্য বিভাগে যান</a></article>
+<article class="card"><div class="card-icon">🐄</div><h3>প্রাণিজ</h3><p>গরু, ছাগল ও ভেড়ার পালন, খাদ্য, স্বাস্থ্য ও রোগ বিষয়ে সহায়তা।</p><a class="btn primary" href="/agri/diagnose">প্রাণিজ বিভাগে যান</a></article>
+<article class="card"><div class="card-icon">🐔</div><h3>পোল্ট্রি</h3><p>মুরগি, হাঁস, টার্কি ও কোয়েল পালন, খাদ্য ও স্বাস্থ্য ব্যবস্থাপনা।</p><a class="btn primary" href="/agri/diagnose">পোল্ট্রি বিভাগে যান</a></article>
+</div></section>
 <section id="products" class="section"><div class="section-head"><div><div class="eyebrow">iFarmer মার্কেটপ্লেস</div><h2>পার্টনারদের পণ্য</h2></div><p>পণ্যের প্রাপ্যতা, দাম ও ব্যবহার বিক্রেতার সঙ্গে নিশ্চিত করুন।</p></div>
 <div class="cards">{product_cards}</div></section>
 <section id="order" class="section order-section"><div class="section-head"><div><div class="eyebrow">অর্ডার রিকোয়েস্ট</div><h2>আপনার অর্ডারের তথ্য দিন</h2></div><p>ফর্ম পাঠানোর পর বিক্রেতা আপনার সঙ্গে যোগাযোগ করবেন।</p></div>
