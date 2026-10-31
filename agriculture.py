@@ -188,7 +188,15 @@ async def diagnose_submit(crop: str=Form(...), area: str=Form(...), symptoms: st
         message = html.escape(error)
         body=f"<h1>AI বিশ্লেষণ আপাতত পাওয়া যাচ্ছে না</h1><div class='card'><p>{message}</p><p>কোনো পেইড সেবা বা চার্জ চালু করা হয়নি।</p></div><a href='/agri/diagnose'>আবার চেষ্টা করুন</a>"
     else:
-        safe_answer = html.escape(answer).replace("\\n", "<br>")
+        safe_answer = html.escape(answer)
+        # Render AI Markdown headings and bullet lists as distinct HTML sections.
+        import re
+        safe_answer = re.sub(r"(?m)^##\\s*(.+)$", lambda m: "<h2 class='diagnosis-heading'>" + m.group(1).strip() + "</h2>", safe_answer)
+        safe_answer = re.sub(r"(?m)^###\\s*(.+)$", lambda m: "<h3>" + m.group(1).strip() + "</h3>", safe_answer)
+        safe_answer = re.sub(r"(?m)^[-*]\\s+(.+)$", lambda m: "<li>" + m.group(1).strip() + "</li>", safe_answer)
+        safe_answer = re.sub(r"(?m)(<li>.*?</li>)(?:<br>)(?=<li>)", r"\\1", safe_answer)
+        safe_answer = re.sub(r"(?m)(?:<br>)*(<li>.*?</li>(?:<br><li>.*?</li>)*)", r"<ul>\\1</ul>", safe_answer)
+        safe_answer = safe_answer.replace("\\n", "<br>")
         body=f"<h1>সম্ভাব্য রোগ/পোকা বিশ্লেষণ</h1><div class='card'><p>{safe_answer}</p></div><p class='fine'>এটি ছবিভিত্তিক AI-এর সম্ভাব্য মূল্যায়ন, নিশ্চিত রোগনির্ণয় নয়। স্প্রে বা চিকিৎসার আগে স্থানীয় কৃষি কর্মকর্তা এবং নিবন্ধিত পণ্যের লেবেল অনুসরণ করুন।</p><a href='/agri/diagnose'>আরেকটি ছবি বিশ্লেষণ করুন</a>"
     return shell("AI বিশ্লেষণ", body)
 
