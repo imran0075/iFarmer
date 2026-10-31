@@ -202,12 +202,12 @@ async def diagnose_submit(crop: str=Form(...), area: str=Form(...), symptoms: st
             if not line:
                 flush_list()
                 continue
-            heading = re.match(r"^#{1,3}\\s*(.+)$", line)
+            heading = re.match(r"^#{1,3}\s*(.+)$", line)
             if heading:
                 flush_list()
                 rendered.append("<h2 class='diagnosis-heading'>" + html.escape(heading.group(1).strip()) + "</h2>")
                 continue
-            bullet = re.match(r"^(?:[-*]\\s+|\\d+[.)]\\s+)(.+)$", line)
+            bullet = re.match(r"^(?:[-*]\s+|\d+[.)]s+)(.+)$", line)
             if bullet:
                 list_items.append(bullet.group(1).strip())
                 continue
