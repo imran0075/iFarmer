@@ -189,33 +189,37 @@ async def diagnose_submit(crop: str=Form(...), area: str=Form(...), symptoms: st
         body=f"<h1>AI বিশ্লেষণ আপাতত পাওয়া যাচ্ছে না</h1><div class='card'><p>{message}</p><p>কোনো পেইড সেবা বা চার্জ চালু করা হয়নি।</p></div><a href='/agri/diagnose'>আবার চেষ্টা করুন</a>"
     else:
         import re
-        # Split AI response into proper vertical sections: heading, then content below.
-        lines = answer.replace("\\r\\n", "\\n").replace("\\r", "\\n").split("\\n")
+        # Normalize heading labels, then split even if Gemini returns a single paragraph.
+        text_answer = answer.replace("\\r", "\\n")
+        text_answer = re.sub(r"(?m)^\\s*#{1,3}\\s*", "", text_answer)
+        labels = [
+            ("সনাক্তকরণ", "১. সনাক্তকরণ"),
+            ("রোগ নির্ণয়", "২. রোগ নির্ণয়"),
+            ("সমাধান", "৩. সমাধান"),
+            ("প্রতিকার ও প্রতিরোধ", "৪. প্রতিকার ও প্রতিরোধ"),
+        ]
+        # Split on section labels whether they occur on separate lines or inline.
+        for label, numbered in labels:
+            text_answer = re.sub(r"(?i)\\s*(?:#{1,3}\\s*)?(?:\\d+[.)]\\s*)?" + re.escape(label) + r"\\s*[:：—-]?\\s*", "\\n§§" + numbered + "§§\\n", text_answer)
+        parts = re.split(r"§§(.*?)§§", text_answer)
+        sections = []
+        if len(parts) > 1:
+            for i in range(1, len(parts), 2):
+                heading = parts[i].strip()
+                content = parts[i+1].strip() if i+1 < len(parts) else ""
+                sections.append((heading, content))
+        else:
+            # Fallback: keep the AI response under clear, explicit section headings.
+            sections = [(heading, "এই অংশের বিস্তারিত তথ্য AI-এর উত্তরে আলাদা করে পাওয়া যায়নি।\n\n" + text_answer.strip()) for _, heading in labels]
+        heading_colors = {"১. সনাক্তকরণ":"#16803c", "২. রোগ নির্ণয়":"#b76a00", "৩. সমাধান":"#2563eb", "৪. প্রতিকার ও প্রতিরোধ":"#7c3aed"}
         rendered = []
-        list_items = []
-        def flush_list():
-            if list_items:
-                rendered.append("<ul>" + "".join("<li>" + html.escape(item) + "</li>" for item in list_items) + "</ul>")
-                list_items.clear()
-        for raw_line in lines:
-            line = raw_line.strip()
-            if not line:
-                flush_list()
-                continue
-            heading = re.match(r"^#{1,3}\s*(.+)$", line)
-            if heading:
-                flush_list()
-                rendered.append("<h2 class='diagnosis-heading'>" + html.escape(heading.group(1).strip()) + "</h2>")
-                continue
-            bullet = re.match(r"^(?:[-*]\s+|\d+[.)]s+)(.+)$", line)
-            if bullet:
-                list_items.append(bullet.group(1).strip())
-                continue
-            flush_list()
-            rendered.append("<p>" + html.escape(line) + "</p>")
-        flush_list()
+        for heading, content in sections:
+            color = heading_colors.get(heading, "#176b45")
+            rendered.append("<section class='diagnosis-section' style='margin:16px 0;padding:16px;border:1px solid #e5e7eb;border-radius:12px;background:#fff'>")
+            rendered.append("<h2 style='margin:0 0 12px;color:" + color + ";font-size:1.15rem'>" + html.escape(heading) + "</h2>")
+            rendered.append("<div style='line-height:1.8;white-space:normal'>" + "<br>".join(html.escape(line.strip()) for line in content.splitlines() if line.strip()) + "</div></section>")
         safe_answer = "".join(rendered)
-        body=f"<h1>সম্ভাব্য রোগ/পোকা বিশ্লেষণ</h1><div class='card diagnosis-report'>{safe_answer}</div><p class='fine'>এটি ছবিভিত্তিক AI-এর সম্ভাব্য মূল্যায়ন, নিশ্চিত রোগনির্ণয় নয়। স্প্রে বা চিকিৎসার আগে স্থানীয় কৃষি কর্মকর্তা এবং নিবন্ধিত পণ্যের লেবেল অনুসরণ করুন।</p><a href='/agri/diagnose'>আরেকটি ছবি বিশ্লেষণ করুন</a>"
+        body=f"<h1>সম্ভাব্য রোগ/পোকা বিশ্লেষণ</h1><div class='diagnosis-report'>{safe_answer}</div><p class='fine'>এটি ছবিভিত্তিক AI-এর সম্ভাব্য মূল্যায়ন, নিশ্চিত রোগনির্ণয় নয়। স্প্রে বা চিকিৎসার আগে স্থানীয় কৃষি কর্মকর্তা এবং নিবন্ধিত পণ্যের লেবেল অনুসরণ করুন।</p><a href='/agri/diagnose'>আরেকটি ছবি বিশ্লেষণ করুন</a>"
     return shell("AI বিশ্লেষণ", body)
 
 @router.post("/agri/{kind}", response_class=HTMLResponse)
