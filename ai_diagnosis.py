@@ -4,7 +4,7 @@ import base64
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
-MODEL = "gemini-2.5-flash"
+MODEL = "gemini-3.5-flash-lite"
 
 def diagnose_crop_image(crop, area, symptoms, image_bytes, mime_type):
     key = os.getenv("GEMINI_API_KEY")
@@ -63,7 +63,7 @@ def diagnose_crop_image(crop, area, symptoms, image_bytes, mime_type):
             if error.code in (401, 403):
                 return None, "Gemini API Key গ্রহণ করা হয়নি। Render-এর GEMINI_API_KEY সেটিংস পরীক্ষা করুন।"
             if error.code == 404:
-                return None, "AI মডেলটি পাওয়া যাচ্ছে না। সার্ভারের মডেল সেটিংস পরীক্ষা করতে হবে।"
+                return None, "AI মডেলটি পাওয়া যাচ্ছে না। সার্ভারের মডেল সেটিংস পরীক্ষা করতে হবে."
             return None, "ছবি বা অনুরোধটি AI গ্রহণ করেনি। JPG/PNG/WebP ছবি দিয়ে আবার চেষ্টা করুন।"
         return None, "AI সার্ভারে সমস্যা হয়েছে (HTTP " + str(error.code) + ")। পরে আবার চেষ্টা করুন।"
     except (URLError, TimeoutError):
