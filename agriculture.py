@@ -52,8 +52,8 @@ def category_page(category: str, q: str = ""):
         "</p><a class='btn primary' href='/agri/diagnose?crop=" + urlencode({"crop": item})[5:] +
         "'>এই বিষয়ে ছবি দিয়ে বিশ্লেষণ</a></article>" for item in matches
     ) or "<article class='card'><p>আপনার খোঁজের সঙ্গে মেলে এমন কোনো বিষয় পাওয়া যায়নি।</p></article>"
-    body = "<div class='eyebrow'>iFarmer · কৃষি সহায়ক</div><h1>" + data["icon"] + " " + data["title"] + "</h1><p>" + html.escape(data["desc"]) + "</p>" + """
-<form class="form card" method="get"><label>নাম দিয়ে খুঁজুন<input name="q" value="""" + html.escape(q, quote=True) + """" placeholder="যেমন: ধান, গরু, মুরগি"></label><button class="btn primary">ফিল্টার করুন</button> <a class="btn light" href="/agri/category/""" + category + """">সব দেখুন</a></form><div class="cards">""" + cards + """</div><p><a href="/agri">কৃষি সহায়ক-এ ফিরে যান</a></p>"""
+    body = f"""<div class="eyebrow">iFarmer · কৃষি সহায়ক</div><h1>{data["icon"]} {data["title"]}</h1><p>{html.escape(data["desc"])}</p>
+<form class="form card" method="get"><label>নাম দিয়ে খুঁজুন<input name="q" value="{html.escape(q, quote=True)}" placeholder="যেমন: ধান, গরু, মুরগি"></label><button class="btn primary">ফিল্টার করুন</button> <a class="btn light" href="/agri/category/{category}">সব দেখুন</a></form><div class="cards">{cards}</div><p><a href="/agri">কৃষি সহায়ক-এ ফিরে যান</a></p>"""
     return shell(data["title"], body)
 
 @router.get("/agri/official-data", response_class=HTMLResponse)
