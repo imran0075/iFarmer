@@ -32,6 +32,30 @@ def agri_home():
     <article class="card"><h2>📷 রোগ-পোকা শনাক্তকরণ</h2><p>ফসলের আক্রান্ত অংশের ছবি আপলোড করুন। AI সম্ভাব্য রোগ, পোকা ও করণীয় বিশ্লেষণ করবে।</p><a class="btn primary" href="/agri/diagnose">ছবি জমা দিন</a></article></div>"""
     return shell("কৃষি সহায়ক", body)
 
+CATEGORY_DATA = {
+    "crop": {"title":"ফসল বিভাগ","icon":"🌾","items":CROPS,"desc":"ফসলের রোগ-পোকা, পুষ্টি, পরিচর্যা ও উৎপাদন বিষয়ে সহায়তা।"},
+    "fish": {"title":"মৎস্য বিভাগ","icon":"🐟","items":["মৎস্য চাষ"],"desc":"মাছের চাষ, পানির গুণাগুণ, রোগ ও পরিচর্যার বিষয়ে সহায়তা।"},
+    "livestock": {"title":"প্রাণিজ বিভাগ","icon":"🐄","items":["প্রাণিজ - গরু","প্রাণিজ - ছাগল","প্রাণিজ - ভেড়া"],"desc":"গরু, ছাগল ও ভেড়া পালন, খাদ্য ও স্বাস্থ্য বিষয়ে সহায়তা।"},
+    "poultry": {"title":"পোল্ট্রি বিভাগ","icon":"🐔","items":["পোল্ট্রি - মুরগি","পোল্ট্রি - হাঁস","পোল্ট্রি - টার্কি","পোল্ট্রি - কোয়েল"],"desc":"মুরগি, হাঁস, টার্কি ও কোয়েল পালন ও স্বাস্থ্য ব্যবস্থাপনা।"},
+}
+
+@router.get("/agri/category/{category}", response_class=HTMLResponse)
+def category_page(category: str, q: str = ""):
+    data = CATEGORY_DATA.get(category)
+    if not data:
+        raise HTTPException(404, "বিভাগ পাওয়া যায়নি")
+    query = q.strip().lower()
+    matches = [item for item in data["items"] if query in item.lower()]
+    options = "".join("<option>" + html.escape(item) + "</option>" for item in matches)
+    cards = "".join(
+        "<article class='card'><h3>" + html.escape(item) + "</h3><p>" + html.escape(data["desc"]) +
+        "</p><a class='btn primary' href='/agri/diagnose?crop=" + urlencode({"crop": item})[5:] +
+        "'>এই বিষয়ে ছবি দিয়ে বিশ্লেষণ</a></article>" for item in matches
+    ) or "<article class='card'><p>আপনার খোঁজের সঙ্গে মেলে এমন কোনো বিষয় পাওয়া যায়নি।</p></article>"
+    body = "<div class='eyebrow'>iFarmer · কৃষি সহায়ক</div><h1>" + data["icon"] + " " + data["title"] + "</h1><p>" + html.escape(data["desc"]) + "</p>" + """
+<form class="form card" method="get"><label>নাম দিয়ে খুঁজুন<input name="q" value="""" + html.escape(q, quote=True) + """" placeholder="যেমন: ধান, গরু, মুরগি"></label><button class="btn primary">ফিল্টার করুন</button> <a class="btn light" href="/agri/category/""" + category + """">সব দেখুন</a></form><div class="cards">""" + cards + """</div><p><a href="/agri">কৃষি সহায়ক-এ ফিরে যান</a></p>"""
+    return shell(data["title"], body)
+
 @router.get("/agri/official-data", response_class=HTMLResponse)
 def official_data():
     # Verified starter records transcribed from DAE BAMIS public crop package.
