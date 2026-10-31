@@ -90,7 +90,7 @@ def weather_form():
     opts = "".join(f'<option>{html.escape(c)}</option>' for c in CITIES)
     return shell("আবহাওয়া", f"""<div class="eyebrow">দৈনিক আবহাওয়া বার্তা</div><h1>আপনার এলাকার আবহাওয়া</h1>
 <div class="card"><p>পাতা খোলার সঙ্গে সঙ্গে আপনার ফোনের অবস্থান শনাক্ত করার অনুমতি চাওয়া হবে। অনুমতি দিলে আপনার অবস্থানের আবহাওয়া দেখাবে।</p>
-<button class="btn primary" type="button" onclick="detectMyLocation()">📍 আবার লোকেশন শনাক্ত করুন</button>
+<button class="btn primary" type="button" onclick="detectMyLocation()">📍 লোকেশন শনাক্তকরণ</button>
 <p id="gps-status" class="fine" role="status" aria-live="polite">আপনার অবস্থানের অনুমতি চাওয়া হচ্ছে…</p>
 <div id="gps-weather"></div></div>
 <form class="form card" method="post"><label>জেলা/এলাকা<select name="city">{opts}</select></label><button class="btn primary">জেলার আবহাওয়া দেখুন</button></form>
