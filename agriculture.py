@@ -1,4 +1,5 @@
 import json
+from ai_diagnosis import diagnose_crop_image
 from urllib.request import urlopen
 from urllib.parse import urlencode
 from fastapi import APIRouter, Form, UploadFile, File, HTTPException
@@ -180,7 +181,7 @@ def calculate(kind: str, crop: str=Form(...), area: float=Form(...), unit: str=F
 @router.get("/agri/diagnose", response_class=HTMLResponse)
 def diagnose_form():
     crops="".join(f"<option>{c}</option>" for c in CROPS)
-    return shell("রোগ-পোকা ছবি",f"""<h1>ফসলের রোগ-পোকার ছবি জমা দিন</h1><form class="form card" method="post" enctype="multipart/form-data"><label>ফসল<select name="crop">{crops}</select></label><label>জেলা<input name="area" maxlength="80" required placeholder="যেমন নরসিংদী"></label><label>লক্ষণ/সমস্যা<input name="symptoms" maxlength="500" placeholder="পাতায় দাগ, পোকা, পচন ইত্যাদি"></label><label>ছবি (JPG/PNG/WebP)<input type="file" name="photo" accept="image/jpeg,image/png,image/webp" required></label><button class="btn primary">ছবি জমা দিন</button></form><p class="fine">সতর্কতা: এই মুহূর্তে AI রোগ শনাক্তকরণ মডেল সংযুক্ত নয়। ছবি গ্রহণ করা হলেও স্বয়ংক্রিয় রোগনির্ণয় বা কীটনাশক পরামর্শ দেওয়া হবে না। নিশ্চিত পরামর্শের জন্য কৃষি কর্মকর্তা/উপসহকারী কৃষি কর্মকর্তার সঙ্গে যোগাযোগ করুন।</p>""")
+    return shell("রোগ-পোকা ছবি",f"""<h1>ফসলের রোগ-পোকার ছবি জমা দিন</h1><form class="form card" method="post" enctype="multipart/form-data"><label>ফসল<select name="crop">{crops}</select></label><label>জেলা<input name="area" maxlength="80" required placeholder="যেমন নরসিংদী"></label><label>লক্ষণ/সমস্যা<input name="symptoms" maxlength="500" placeholder="পাতায় দাগ, পোকা, পচন ইত্যাদি"></label><label>ছবি (JPG/PNG/WebP)<input type="file" name="photo" accept="image/jpeg,image/png,image/webp" capture="environment" required></label><button class="btn primary">ছবি জমা দিন</button></form><p class="fine">সতর্কতা: এই মুহূর্তে AI রোগ শনাক্তকরণ মডেল সংযুক্ত নয়। ছবি গ্রহণ করা হলেও স্বয়ংক্রিয় রোগনির্ণয় বা কীটনাশক পরামর্শ দেওয়া হবে না। নিশ্চিত পরামর্শের জন্য কৃষি কর্মকর্তা/উপসহকারী কৃষি কর্মকর্তার সঙ্গে যোগাযোগ করুন।</p>""")
 
 @router.post("/agri/diagnose", response_class=HTMLResponse)
 async def diagnose_submit(crop: str=Form(...), area: str=Form(...), symptoms: str=Form(""), photo: UploadFile=File(...)):
@@ -189,4 +190,11 @@ async def diagnose_submit(crop: str=Form(...), area: str=Form(...), symptoms: st
     data=await photo.read(5*1024*1024+1)
     if len(data)>5*1024*1024: raise HTTPException(400,"ছবি ৫ MB-এর কম হতে হবে")
     if not data: raise HTTPException(400,"ছবি খালি")
-    return shell("ছবি গ্রহণ",f"<h1>ছবি গ্রহণ করা হয়েছে</h1><p>ফসল: {html.escape(crop)} · এলাকা: {html.escape(area)}</p><p>ছবিটি আপলোড হয়েছে, তবে AI মডেল সংযুক্ত না থাকায় রোগ শনাক্ত করা হয়নি।</p><p>লক্ষণ: {html.escape(symptoms)}</p><p><b>এখনই অনুমান করে কীটনাশক প্রয়োগ করবেন না।</b> পরিষ্কার আলোতে আক্রান্ত অংশ ও পুরো গাছের আলাদা ছবি তুলে স্থানীয় কৃষি কর্মকর্তাকে দেখান।</p><a href='/agri'>ফিরুন</a>")
+    answer, error = diagnose_crop_image(crop, area[:80], symptoms[:500], data, photo.content_type)
+    if error:
+        message = html.escape(error)
+        body=f"<h1>AI বিশ্লেষণ আপাতত পাওয়া যাচ্ছে না</h1><div class='card'><p>{message}</p><p>কোনো পেইড সেবা বা চার্জ চালু করা হয়নি।</p></div><a href='/agri/diagnose'>আবার চেষ্টা করুন</a>"
+    else:
+        safe_answer = html.escape(answer).replace("\\n", "<br>")
+        body=f"<h1>সম্ভাব্য রোগ/পোকা বিশ্লেষণ</h1><div class='card'><p>{safe_answer}</p></div><p class='fine'>এটি ছবিভিত্তিক AI-এর সম্ভাব্য মূল্যায়ন, নিশ্চিত রোগনির্ণয় নয়। স্প্রে বা চিকিৎসার আগে স্থানীয় কৃষি কর্মকর্তা এবং নিবন্ধিত পণ্যের লেবেল অনুসরণ করুন।</p><a href='/agri/diagnose'>আরেকটি ছবি বিশ্লেষণ করুন</a>"
+    return shell("AI বিশ্লেষণ", body)
