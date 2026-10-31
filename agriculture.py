@@ -27,7 +27,7 @@ def agri_home():
     <article class="card"><h2>📚 সরকারি সার সুপারিশ</h2><p>BARC, Crop Zoning ও DAE-এর সরকারি কৃষি তথ্যসূত্র দেখুন।</p><a class="btn primary" href="/agri/official-data">সরকারি তথ্য দেখুন</a></article><article class="card"><h2>🌦️ দৈনিক আবহাওয়া</h2><p>জেলা নির্বাচন করে তাপমাত্রা, বৃষ্টি, আর্দ্রতা ও বাতাসের তথ্য দেখুন।</p><a class="btn primary" href="/agri/weather">আবহাওয়া দেখুন</a></article>
     <article class="card"><h2>🧮 সার হিসাব</h2><p>কৃষি কর্মকর্তার সুপারিশকৃত একক মাত্রা দিয়ে জমির মোট পরিমাণ হিসাব করুন।</p><a class="btn primary" href="/agri/fertilizer">হিসাব করুন</a></article>
     <article class="card"><h2>🧴 কীটনাশক হিসাব</h2><p>শুধু পণ্যের অনুমোদিত লেবেলে লেখা মাত্রা বসিয়ে পরিমাণ হিসাব করুন।</p><a class="btn primary" href="/agri/pesticide">লেবেলভিত্তিক হিসাব</a></article>
-    <article class="card"><h2>📷 রোগ-পোকা শনাক্তকরণ</h2><p>ফসলের ছবি জমা দিন। AI শনাক্তকরণ চালু না হওয়া পর্যন্ত নিশ্চিত রোগনির্ণয় দেখানো হবে না।</p><a class="btn primary" href="/agri/diagnose">ছবি জমা দিন</a></article></div>"""
+    <article class="card"><h2>📷 রোগ-পোকা শনাক্তকরণ</h2><p>ফসলের আক্রান্ত অংশের ছবি আপলোড করুন। AI সম্ভাব্য রোগ, পোকা ও করণীয় বিশ্লেষণ করবে।</p><a class="btn primary" href="/agri/diagnose">ছবি জমা দিন</a></article></div>"""
     return shell("কৃষি সহায়ক", body)
 
 @router.get("/agri/official-data", response_class=HTMLResponse)
