@@ -188,16 +188,34 @@ async def diagnose_submit(crop: str=Form(...), area: str=Form(...), symptoms: st
         message = html.escape(error)
         body=f"<h1>AI বিশ্লেষণ আপাতত পাওয়া যাচ্ছে না</h1><div class='card'><p>{message}</p><p>কোনো পেইড সেবা বা চার্জ চালু করা হয়নি।</p></div><a href='/agri/diagnose'>আবার চেষ্টা করুন</a>"
     else:
-        safe_answer = html.escape(answer)
-        # Render AI Markdown headings and bullet lists as distinct HTML sections.
         import re
-        safe_answer = re.sub(r"(?m)^##\\s*(.+)$", lambda m: "<h2 class='diagnosis-heading'>" + m.group(1).strip() + "</h2>", safe_answer)
-        safe_answer = re.sub(r"(?m)^###\\s*(.+)$", lambda m: "<h3>" + m.group(1).strip() + "</h3>", safe_answer)
-        safe_answer = re.sub(r"(?m)^[-*]\\s+(.+)$", lambda m: "<li>" + m.group(1).strip() + "</li>", safe_answer)
-        safe_answer = re.sub(r"(?m)(<li>.*?</li>)(?:<br>)(?=<li>)", r"\\1", safe_answer)
-        safe_answer = re.sub(r"(?m)(?:<br>)*(<li>.*?</li>(?:<br><li>.*?</li>)*)", r"<ul>\\1</ul>", safe_answer)
-        safe_answer = safe_answer.replace("\\n", "<br>")
-        body=f"<h1>সম্ভাব্য রোগ/পোকা বিশ্লেষণ</h1><div class='card'><p>{safe_answer}</p></div><p class='fine'>এটি ছবিভিত্তিক AI-এর সম্ভাব্য মূল্যায়ন, নিশ্চিত রোগনির্ণয় নয়। স্প্রে বা চিকিৎসার আগে স্থানীয় কৃষি কর্মকর্তা এবং নিবন্ধিত পণ্যের লেবেল অনুসরণ করুন।</p><a href='/agri/diagnose'>আরেকটি ছবি বিশ্লেষণ করুন</a>"
+        # Split AI response into proper vertical sections: heading, then content below.
+        lines = answer.replace("\\r\\n", "\\n").replace("\\r", "\\n").split("\\n")
+        rendered = []
+        list_items = []
+        def flush_list():
+            if list_items:
+                rendered.append("<ul>" + "".join("<li>" + html.escape(item) + "</li>" for item in list_items) + "</ul>")
+                list_items.clear()
+        for raw_line in lines:
+            line = raw_line.strip()
+            if not line:
+                flush_list()
+                continue
+            heading = re.match(r"^#{1,3}\\s*(.+)$", line)
+            if heading:
+                flush_list()
+                rendered.append("<h2 class='diagnosis-heading'>" + html.escape(heading.group(1).strip()) + "</h2>")
+                continue
+            bullet = re.match(r"^(?:[-*]\\s+|\\d+[.)]\\s+)(.+)$", line)
+            if bullet:
+                list_items.append(bullet.group(1).strip())
+                continue
+            flush_list()
+            rendered.append("<p>" + html.escape(line) + "</p>")
+        flush_list()
+        safe_answer = "".join(rendered)
+        body=f"<h1>সম্ভাব্য রোগ/পোকা বিশ্লেষণ</h1><div class='card diagnosis-report'>{safe_answer}</div><p class='fine'>এটি ছবিভিত্তিক AI-এর সম্ভাব্য মূল্যায়ন, নিশ্চিত রোগনির্ণয় নয়। স্প্রে বা চিকিৎসার আগে স্থানীয় কৃষি কর্মকর্তা এবং নিবন্ধিত পণ্যের লেবেল অনুসরণ করুন।</p><a href='/agri/diagnose'>আরেকটি ছবি বিশ্লেষণ করুন</a>"
     return shell("AI বিশ্লেষণ", body)
 
 @router.post("/agri/{kind}", response_class=HTMLResponse)
