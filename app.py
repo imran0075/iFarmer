@@ -603,6 +603,81 @@ def partner_status(request: Request, partner_id: int=Form(...), status: str=Form
     log_action(request.session["admin"], "partner_status:"+status, "partner", partner_id)
     return RedirectResponse("/admin/dashboard", status_code=303)
 
+@app.get("/login", response_class=HTMLResponse)
+def farmer_login():
+    # Firebase Phone Auth UI. Configure Firebase test numbers in the console for zero-SMS testing.
+    firebase_config = {
+        "apiKey": "AIzaSyC8M0e0yNK-I61QxEty0HJsVN8a-cRylVo",
+        "authDomain": "ifarmer-24643.firebaseapp.com",
+        "projectId": "ifarmer-24643",
+        "storageBucket": "ifarmer-24643.firebasestorage.app",
+        "messagingSenderId": "973721838048",
+        "appId": "1:973721838048:web:44d2011431c58d26880b85",
+        "measurementId": "G-7RWZ4DJ0LW"
+    }
+    import json
+    config_json = json.dumps(firebase_config)
+    body = f"""
+    <div class="eyebrow">iFarmer · কৃষকের অ্যাকাউন্ট</div>
+    <h1>মোবাইল নম্বর দিয়ে লগইন</h1>
+    <p>আপনার মোবাইল নম্বরে OTP পাঠিয়ে পরিচয় যাচাই করুন।</p>
+    <div class="card form">
+      <label>বাংলাদেশি মোবাইল নম্বর
+        <input id="phone" type="tel" inputmode="tel" placeholder="+8801XXXXXXXXX" autocomplete="tel" required>
+      </label>
+      <div id="recaptcha-container"></div>
+      <button id="send" class="btn primary" type="button">OTP পাঠান</button>
+      <label>OTP কোড
+        <input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="৬ সংখ্যার কোড">
+      </label>
+      <button id="verify" class="btn primary" type="button">যাচাই ও লগইন</button>
+      <p id="status" role="status" aria-live="polite"></p>
+      <button id="logout" class="btn light" type="button" hidden>লগআউট</button>
+    </div>
+    <p class="fine">SMS খরচ ছাড়া পরীক্ষা করতে Firebase Console → Authentication → Sign-in method → Phone-এ test phone number ও test code যোগ করুন। বাস্তব SMS পাঠালে চার্জ হতে পারে।</p>
+    <p><a href="/">iFarmer হোমে ফিরুন</a></p>
+    <script type="module">
+      import {{ initializeApp }} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import {{ getAuth, RecaptchaVerifier, signInWithPhoneNumber, onAuthStateChanged, signOut }} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+      const app = initializeApp({config_json});
+      const auth = getAuth(app);
+      const status = document.getElementById("status");
+      let confirmation = null;
+      const recaptcha = new RecaptchaVerifier(auth, "recaptcha-container", {{
+        size: "normal",
+        callback: () => {{ document.getElementById("send").disabled = false; }},
+        "expired-callback": () => {{ status.textContent = "reCAPTCHA মেয়াদ শেষ—আবার যাচাই করুন।"; }}
+      }});
+      document.getElementById("send").disabled = true;
+      recaptcha.render().catch(e => status.textContent = e.message);
+      document.getElementById("send").addEventListener("click", async () => {{
+        const phone = document.getElementById("phone").value.trim();
+        if (!/^\+8801[3-9]\d{{8}}$/.test(phone)) {{
+          status.textContent = "নম্বরটি +8801XXXXXXXXX ফরম্যাটে লিখুন।"; return;
+        }}
+        try {{
+          confirmation = await signInWithPhoneNumber(auth, phone, recaptcha);
+          status.textContent = "OTP পাঠানো হয়েছে। কোড লিখে যাচাই করুন।";
+        }} catch (e) {{ status.textContent = "OTP পাঠানো যায়নি: " + e.message; }}
+      }});
+      document.getElementById("verify").addEventListener("click", async () => {{
+        if (!confirmation) {{ status.textContent = "আগে OTP পাঠান।"; return; }}
+        try {{
+          const result = await confirmation.confirm(document.getElementById("code").value.trim());
+          status.textContent = "লগইন সফল! " + result.user.phoneNumber;
+        }} catch (e) {{ status.textContent = "OTP যাচাই হয়নি: " + e.message; }}
+      }});
+      onAuthStateChanged(auth, user => {{
+        document.getElementById("logout").hidden = !user;
+        if (user) status.textContent = "লগইন করা নম্বর: " + user.phoneNumber;
+      }});
+      document.getElementById("logout").addEventListener("click", async () => {{
+        await signOut(auth); status.textContent = "লগআউট করা হয়েছে।";
+      }});
+    </script>
+    """
+    return shell("মোবাইল OTP লগইন", body)
+
 @app.get("/privacy", response_class=HTMLResponse)
 def privacy():
     return page("গোপনীয়তা", """<main class="narrow section"><h1>গোপনীয়তা নীতি</h1><p>এই স্টার্টার সাইটে জমা দেওয়া অর্ডার ও পার্টনার আবেদন স্থানীয় SQLite ডেটাবেসে সংরক্ষিত হয়। লাইভ করার আগে ডেটা ব্যবহারের উদ্দেশ্য, সংরক্ষণকাল, যোগাযোগের তথ্য এবং ব্যবহারকারীর অধিকার নিয়ে পূর্ণ নীতি প্রকাশ করুন।</p><p>এটি আইনি পরামর্শ নয়।</p></main>""")
