@@ -676,7 +676,7 @@ def farmer_login():
       }});
     </script>
     """
-    return shell("মোবাইল OTP লগইন", body)
+    return page("মোবাইল OTP লগইন", body)
 
 @app.get("/privacy", response_class=HTMLResponse)
 def privacy():
