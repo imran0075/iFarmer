@@ -89,25 +89,41 @@ def official_data():
 def weather_form():
     opts = "".join(f'<option>{html.escape(c)}</option>' for c in CITIES)
     return shell("আবহাওয়া", f"""<div class="eyebrow">দৈনিক আবহাওয়া বার্তা</div><h1>আপনার এলাকার আবহাওয়া</h1>
-<div class="card"><p>ফোনের অবস্থান ব্যবহার করে স্বয়ংক্রিয়ভাবে আপনার এলাকার অবস্থান শনাক্ত করুন।</p>
-<button class="btn primary" type="button" onclick="detectMyLocation()">📍 আমার অবস্থান শনাক্ত করুন</button>
-<p id="gps-status" class="fine" role="status" aria-live="polite">বোতামে চাপ দিলে Chrome লোকেশন ব্যবহারের অনুমতি চাইবে।</p></div>
+<div class="card"><p>পাতা খোলার সঙ্গে সঙ্গে আপনার ফোনের অবস্থান শনাক্ত করার অনুমতি চাওয়া হবে। অনুমতি দিলে আপনার অবস্থানের আবহাওয়া দেখাবে।</p>
+<button class="btn primary" type="button" onclick="detectMyLocation()">📍 আবার লোকেশন শনাক্ত করুন</button>
+<p id="gps-status" class="fine" role="status" aria-live="polite">আপনার অবস্থানের অনুমতি চাওয়া হচ্ছে…</p>
+<div id="gps-weather"></div></div>
 <form class="form card" method="post"><label>জেলা/এলাকা<select name="city">{opts}</select></label><button class="btn primary">জেলার আবহাওয়া দেখুন</button></form>
-<p class="fine">লোকেশন শুধু এই পাতায় আপনার অবস্থান শনাক্ত করার জন্য ব্রাউজার থেকে চাওয়া হবে। অনুমতি না দিলেও জেলা নির্বাচন করে আবহাওয়া দেখা যাবে।</p>
+<p class="fine">লোকেশন অনুমতি না দিলে জেলা নির্বাচন করে আবহাওয়া দেখা যাবে। আপনার অবস্থান এই পাতায় আবহাওয়া দেখানোর জন্য ব্যবহার করা হবে।</p>
 <script>
-function detectMyLocation() {{
+async function detectMyLocation() {{
   const status = document.getElementById('gps-status');
+  const result = document.getElementById('gps-weather');
   if (!navigator.geolocation) {{ status.textContent = 'আপনার ব্রাউজারে GPS লোকেশন সুবিধা নেই।'; return; }}
-  status.textContent = 'আপনার অবস্থান জানতে অনুমতি চাওয়া হচ্ছে…';
-  navigator.geolocation.getCurrentPosition(function(position) {{
-    const lat = position.coords.latitude.toFixed(5);
-    const lon = position.coords.longitude.toFixed(5);
-    status.textContent = 'অবস্থান শনাক্ত হয়েছে। অক্ষাংশ: ' + lat + ', দ্রাঘিমাংশ: ' + lon + '। স্বয়ংক্রিয় আবহাওয়া দেখানোর পরবর্তী ধাপ এখনো যুক্ত করা বাকি।';
+  status.textContent = 'আপনার অবস্থানের অনুমতি চাওয়া হচ্ছে…';
+  result.innerHTML = '';
+  navigator.geolocation.getCurrentPosition(async function(position) {{
+    const lat = position.coords.latitude;
+    const lon = position.coords.longitude;
+    status.textContent = 'অবস্থান শনাক্ত হয়েছে। আবহাওয়ার তথ্য আনা হচ্ছে…';
+    try {{
+      const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&current=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m&daily=precipitation_probability_max,temperature_2m_max,temperature_2m_min&timezone=Asia%2FDhaka&forecast_days=1';
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('weather unavailable');
+      const data = await response.json();
+      const cur = data.current;
+      const rain = data.daily.precipitation_probability_max[0];
+      status.textContent = 'আপনার বর্তমান অবস্থানের আবহাওয়া';
+      result.innerHTML = '<div class="card"><h2>এখন ' + cur.temperature_2m + '°C</h2><p>আর্দ্রতা: ' + cur.relative_humidity_2m + '%</p><p>বৃষ্টিপাত: ' + cur.precipitation + ' মিমি</p><p>বাতাস: ' + cur.wind_speed_10m + ' কিমি/ঘণ্টা</p><p>আজ বৃষ্টির সম্ভাবনা: ' + (rain == null ? 'তথ্য নেই' : rain + '%') + '</p><p>সর্বোচ্চ: ' + data.daily.temperature_2m_max[0] + '°C · সর্বনিম্ন: ' + data.daily.temperature_2m_min[0] + '°C</p></div>';
+    }} catch (e) {{
+      status.textContent = 'লোকেশন পাওয়া গেছে, কিন্তু আবহাওয়ার তথ্য আনা যায়নি। ইন্টারনেট পরীক্ষা করে আবার চেষ্টা করুন।';
+    }}
   }}, function(error) {{
     const messages = {{1:'লোকেশন অনুমতি দেওয়া হয়নি। Chrome Site settings থেকে Location → Allow করুন।',2:'ফোনের অবস্থান পাওয়া যাচ্ছে না। ফোনের Location চালু করুন।',3:'লোকেশন পেতে সময় শেষ হয়েছে। আবার চেষ্টা করুন।'}};
     status.textContent = messages[error.code] || 'লোকেশন পাওয়া যায়নি। আবার চেষ্টা করুন.';
   }}, {{enableHighAccuracy:true, timeout:15000, maximumAge:60000}});
 }}
+window.addEventListener('load', detectMyLocation);
 </script>""")
 
 @router.post("/agri/weather", response_class=HTMLResponse)
