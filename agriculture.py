@@ -15,7 +15,9 @@ CITIES = {
     "বরিশাল": (22.7010, 90.3535), "সিলেট": (24.8949, 91.8687),
     "যশোর": (23.1667, 89.2167), "বগুড়া": (24.8465, 89.3773)
 }
-CROPS = ["ধান","গম","ভুট্টা","আলু","টমেটো","মরিচ","বেগুন","পাট","পেঁয়াজ","রসুন","শাকসবজি","আম","লিচু","কলা","মৎস্য চাষ","প্রাণিজ - গরু","প্রাণিজ - ছাগল","প্রাণিজ - ভেড়া","পোল্ট্রি - মুরগি","পোল্ট্রি - হাঁস","পোল্ট্রি - টার্কি","পোল্ট্রি - কোয়েল"]
+CROPS = ["ধান","গম","ভুট্টা","আলু","টমেটো","মরিচ","বেগুন","পাট","পেঁয়াজ","রসুন","শাকসবজি","আম","লিচু","কলা"]
+LIVESTOCK_TYPES = ["মৎস্য চাষ","প্রাণিজ - গরু","প্রাণিজ - ছাগল","প্রাণিজ - ভেড়া","পোল্ট্রি - মুরগি","পোল্ট্রি - হাঁস","পোল্ট্রি - টার্কি","পোল্ট্রি - কোয়েল"]
+DIAGNOSIS_TYPES = CROPS + LIVESTOCK_TYPES
 UNITS = {"একর":1.0,"শতক":0.01,"বিঘা":0.33,"হেক্টর":2.471}
 
 def shell(title, body):
@@ -180,7 +182,7 @@ def diagnose_form():
 
 @router.post("/agri/diagnose", response_class=HTMLResponse)
 async def diagnose_submit(crop: str=Form(...), area: str=Form(...), symptoms: str=Form(""), photo: UploadFile=File(...)):
-    if crop not in CROPS or photo.content_type not in ("image/jpeg","image/png","image/webp"):
+    if crop not in DIAGNOSIS_TYPES or photo.content_type not in ("image/jpeg","image/png","image/webp"):
         raise HTTPException(400,"ফসল ও JPG/PNG/WebP ছবি দিন")
     data=await photo.read(5*1024*1024+1)
     if len(data)>5*1024*1024: raise HTTPException(400,"ছবি ৫ MB-এর কম হতে হবে")
