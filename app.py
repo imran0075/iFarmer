@@ -1,4 +1,7 @@
 import os, sqlite3, secrets, hmac, hashlib, re
+import json
+import firebase_admin
+from firebase_admin import credentials, auth as firebase_auth
 import psycopg
 from psycopg.rows import dict_row
 from datetime import datetime, timezone
@@ -50,6 +53,9 @@ def sql_placeholders(sql):
 def init_db():
     primary_key = "SERIAL PRIMARY KEY" if DATABASE_URL else "INTEGER PRIMARY KEY AUTOINCREMENT"
     with db() as c:
+        c.execute("""CREATE TABLE IF NOT EXISTS farmers(
+            firebase_uid TEXT PRIMARY KEY, phone TEXT NOT NULL UNIQUE,
+            created_at TEXT NOT NULL, last_login_at TEXT NOT NULL)""")
         c.execute(f"""CREATE TABLE IF NOT EXISTS orders(
             id {primary_key}, name TEXT NOT NULL, phone TEXT NOT NULL,
             address TEXT NOT NULL, product TEXT NOT NULL, quantity TEXT NOT NULL,
@@ -603,6 +609,57 @@ def partner_status(request: Request, partner_id: int=Form(...), status: str=Form
     log_action(request.session["admin"], "partner_status:"+status, "partner", partner_id)
     return RedirectResponse("/admin/dashboard", status_code=303)
 
+
+
+def get_firebase_admin():
+    """Initialize Firebase Admin once, using the private Render environment variable."""
+    if firebase_admin._apps:
+        return firebase_admin.get_app()
+    raw = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON", "").strip()
+    if not raw:
+        raise HTTPException(503, "Firebase সার্ভার কনফিগারেশন পাওয়া যায়নি।")
+    try:
+        service_account = json.loads(raw)
+        cred = credentials.Certificate(service_account)
+        return firebase_admin.initialize_app(cred)
+    except Exception:
+        # Never expose credential contents or provider exception details.
+        raise HTTPException(503, "Firebase সার্ভার কনফিগারেশন সঠিক নয়।")
+
+@app.post("/api/farmer/session")
+async def create_farmer_session(request: Request):
+    get_firebase_admin()
+    try:
+        payload = await request.json()
+        token = payload.get("idToken", "") if isinstance(payload, dict) else ""
+        if not isinstance(token, str) or not token:
+            raise HTTPException(400, "লগইন টোকেন পাওয়া যায়নি।")
+        decoded = firebase_auth.verify_id_token(token, check_revoked=True)
+        uid = decoded.get("uid")
+        phone = decoded.get("phone_number")
+        if not uid or not phone:
+            raise HTTPException(401, "যাচাইকৃত মোবাইল নম্বর পাওয়া যায়নি।")
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(401, "Firebase পরিচয় যাচাই হয়নি। আবার লগইন করুন।")
+    timestamp = now()
+    with db() as c:
+        c.execute(sql_placeholders("""INSERT INTO farmers(firebase_uid,phone,created_at,last_login_at)
+            VALUES(?,?,?,?) ON CONFLICT(firebase_uid) DO UPDATE SET
+            phone=excluded.phone,last_login_at=excluded.last_login_at"""),
+            (uid, phone, timestamp, timestamp))
+    request.session.clear()
+    request.session["farmer_uid"] = uid
+    request.session["farmer_phone"] = phone
+    return {"ok": True, "phone": phone}
+
+@app.post("/api/farmer/logout")
+def farmer_logout(request: Request):
+    request.session.pop("farmer_uid", None)
+    request.session.pop("farmer_phone", None)
+    return {"ok": True}
+
 @app.get("/login", response_class=HTMLResponse)
 def farmer_login():
     # Firebase Phone Auth UI. Configure Firebase test numbers in the console for zero-SMS testing.
@@ -664,14 +721,23 @@ def farmer_login():
         if (!confirmation) {{ status.textContent = "আগে OTP পাঠান।"; return; }}
         try {{
           const result = await confirmation.confirm(document.getElementById("code").value.trim());
-          status.textContent = "লগইন সফল! " + result.user.phoneNumber;
+          const idToken = await result.user.getIdToken(true);
+          const response = await fetch("/api/farmer/session", {
+            method: "POST", headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({idToken})
+          });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.detail || "সার্ভার লগইন ব্যর্থ হয়েছে।");
+          status.textContent = "লগইন সফল! " + data.phone + " — সার্ভারে যাচাই সম্পন্ন।";
         }} catch (e) {{ status.textContent = "OTP যাচাই হয়নি: " + e.message; }}
       }});
       onAuthStateChanged(auth, user => {{
         document.getElementById("logout").hidden = !user;
         if (user) status.textContent = "লগইন করা নম্বর: " + user.phoneNumber;
+        else fetch("/api/farmer/logout", {method: "POST"}).catch(() => {});
       }});
       document.getElementById("logout").addEventListener("click", async () => {{
+        await fetch("/api/farmer/logout", {method: "POST"});
         await signOut(auth); status.textContent = "লগআউট করা হয়েছে।";
       }});
     </script>
