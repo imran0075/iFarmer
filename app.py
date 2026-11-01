@@ -802,24 +802,25 @@ def farmer_profile(request: Request):
  const status = document.getElementById("geo-status");
  const fill = (el, items, label) => {{
    el.innerHTML = '<option value="">'+label+'</option>';
-   items.forEach(item => {{ const o=document.createElement("option"); o.value=item.id; o.textContent=item.bn_name || item.name; el.appendChild(o); }});
+   items.forEach(item => {{ const o=document.createElement("option"); o.value=item.bn_name || item.name; o.dataset.id=item.id; o.textContent=item.bn_name || item.name; el.appendChild(o); }});
    el.disabled=false;
  }};
+ const selectedId = el => el.selectedOptions[0]?.dataset.id || "";
  const reset=(el,label)=>{{el.innerHTML='<option value="">'+label+'</option>';el.disabled=true;}};
  try {{
    const [dv,dt,uz,un]=await Promise.all(["divisions","districts","upazilas","unions"].map(async f=>{{const r=await fetch(base+"/"+f+".json");if(!r.ok)throw Error(f);return r.json();}}));
    fill(division,dv,"বিভাগ নির্বাচন করুন");
    division.addEventListener("change",()=>{{
      reset(district,"জেলা নির্বাচন করুন");reset(upazila,"উপজেলা নির্বাচন করুন");reset(union,"ইউনিয়ন/পৌরসভা নির্বাচন করুন");
-     fill(district,dt.filter(x=>String(x.division_id)===String(division.value)),"জেলা নির্বাচন করুন");
+     fill(district,dt.filter(x=>String(x.division_id)===String(selectedId(division))),"জেলা নির্বাচন করুন");
    }});
    district.addEventListener("change",()=>{{
      reset(upazila,"উপজেলা নির্বাচন করুন");reset(union,"ইউনিয়ন/পৌরসভা নির্বাচন করুন");
-     fill(upazila,uz.filter(x=>String(x.district_id)===String(district.value)),"উপজেলা নির্বাচন করুন");
+     fill(upazila,uz.filter(x=>String(x.district_id)===String(selectedId(district))),"উপজেলা নির্বাচন করুন");
    }});
    upazila.addEventListener("change",()=>{{
      reset(union,"ইউনিয়ন/পৌরসভা নির্বাচন করুন");
-     fill(union,un.filter(x=>String(x.upazila_id)===String(upazila.value)),"ইউনিয়ন/পৌরসভা নির্বাচন করুন");
+     fill(union,un.filter(x=>String(x.upazila_id)===String(selectedId(upazila))),"ইউনিয়ন/পৌরসভা নির্বাচন করুন");
    }});
    status.textContent="বাংলাদেশের ঠিকানার তালিকা প্রস্তুত। বিভাগ নির্বাচন করুন।";
  }} catch(e) {{
