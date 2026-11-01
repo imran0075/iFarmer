@@ -683,15 +683,18 @@ def farmer_login():
     <h1>মোবাইল নম্বর দিয়ে লগইন</h1>
     <p>আপনার মোবাইল নম্বরে OTP পাঠিয়ে পরিচয় যাচাই করুন।</p>
     <div class="card form">
-      <label>বাংলাদেশি মোবাইল নম্বর
-        <input id="phone" type="tel" inputmode="tel" placeholder="+8801XXXXXXXXX" autocomplete="tel" required>
+      <label>মোবাইল নম্বর
+        <div style="display:flex;gap:8px;align-items:center">
+          <span style="padding:12px 14px;border:1px solid #cbd5e1;border-radius:10px;background:#f1f5f9;font-weight:700">+880</span>
+          <input id="phone" type="tel" inputmode="numeric" placeholder="01XXXXXXXXX" autocomplete="tel-national" maxlength="11" required>
+        </div>
       </label>
       <div id="recaptcha-container"></div>
       <button id="send" class="btn primary" type="button">OTP পাঠান</button>
       <label>OTP কোড
         <input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="৬ সংখ্যার কোড">
       </label>
-      <button id="verify" class="btn primary" type="button">যাচাই ও লগইন</button>
+      <button id="verify" class="btn primary" type="button">OTP যাচাই</button>
       <p id="status" role="status" aria-live="polite"></p>
       <button id="logout" class="btn light" type="button" hidden>লগআউট</button>
     </div>
@@ -712,19 +715,25 @@ def farmer_login():
       document.getElementById("send").disabled = true;
       recaptcha.render().catch(e => status.textContent = e.message);
       document.getElementById("send").addEventListener("click", async () => {
-        const phone = document.getElementById("phone").value.trim();
-        if (!/^\+8801[3-9]\d{8}$/.test(phone)) {
-          status.textContent = "নম্বরটি +8801XXXXXXXXX ফরম্যাটে লিখুন।"; return;
+        const localPhone = document.getElementById("phone").value.replace(/\D/g, "");
+        if (!/^01[3-9]\d{8}$/.test(localPhone)) {
+          status.textContent = "১১ সংখ্যার বাংলাদেশি মোবাইল নম্বর লিখুন (01XXXXXXXXX)।"; return;
         }
+        const phone = "+880" + localPhone.slice(1);
         try {
           confirmation = await signInWithPhoneNumber(auth, phone, recaptcha);
-          status.textContent = "OTP পাঠানো হয়েছে। কোড লিখে যাচাই করুন।";
+          status.textContent = "OTP পাঠানো হয়েছে। SMS এলে কোডটি স্বয়ংক্রিয়ভাবে বসবে এবং যাচাই হবে।";
         } catch (e) { status.textContent = "OTP পাঠানো যায়নি: " + e.message; }
       });
-      document.getElementById("verify").addEventListener("click", async () => {
-        if (!confirmation) { status.textContent = "আগে OTP পাঠান।"; return; }
+      let verifying = false;
+      async function verifyOtp() {
+        if (!confirmation || verifying) return;
+        const code = document.getElementById("code").value.trim();
+        if (!/^\d{6}$/.test(code)) return;
+        verifying = true;
+        status.textContent = "OTP স্বয়ংক্রিয়ভাবে যাচাই হচ্ছে…";
         try {
-          const result = await confirmation.confirm(document.getElementById("code").value.trim());
+          const result = await confirmation.confirm(code);
           const idToken = await result.user.getIdToken(true);
           const response = await fetch("/api/farmer/session", {
             method: "POST", headers: {"Content-Type": "application/json"},
@@ -734,7 +743,14 @@ def farmer_login():
           if (!response.ok) throw new Error(data.detail || "সার্ভার লগইন ব্যর্থ হয়েছে।");
           status.textContent = "লগইন সফল! প্রোফাইল ফর্মে নেওয়া হচ্ছে…";
           window.location.href = "/farmer/profile";
-        } catch (e) { status.textContent = "OTP যাচাই হয়নি: " + e.message; }
+        } catch (e) {
+          verifying = false;
+          status.textContent = "OTP যাচাই হয়নি: " + e.message;
+        }
+      }
+      document.getElementById("verify").addEventListener("click", verifyOtp);
+      document.getElementById("code").addEventListener("input", () => {
+        if (document.getElementById("code").value.trim().length === 6) verifyOtp();
       });
       onAuthStateChanged(auth, user => {
         document.getElementById("logout").hidden = !user;
