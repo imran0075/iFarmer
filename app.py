@@ -826,13 +826,12 @@ def farmer_profile(request: Request):
      const rows=un.filter(x=>String(x.upazila_id)===String(upazila.value));
      fill(union,rows,"ইউনিয়ন/পৌরসভা নির্বাচন করুন","");
    });
-   [division,district,upazila,union].forEach(el=>el.addEventListener("change",()=>{
-     const selected=el.options[el.selectedIndex]; if(selected && selected.dataset.name) el.dataset.selectedName=selected.dataset.name;
-   }));
-   // Submit readable Bangla names rather than internal IDs.
-   [division,district,upazila,union].forEach(el=>el.addEventListener("change",()=>{
-     const opt=el.options[el.selectedIndex]; if(opt && opt.dataset.name) opt.value=opt.dataset.name;
-   }));
+   // Send the selected Bangla names only when the form is submitted.
+   division.form.addEventListener("submit",()=>{
+     [division,district,upazila,union].forEach(el=>{
+       const opt=el.options[el.selectedIndex]; if(opt && opt.dataset.name) el.value=opt.dataset.name;
+     });
+   });
    status.textContent="বাংলাদেশের ঠিকানার তালিকা প্রস্তুত। বিভাগ নির্বাচন করুন।";
  } catch(e) {
    status.textContent="ঠিকানার তালিকা লোড হয়নি। পৃষ্ঠা রিফ্রেশ করুন বা কিছুক্ষণ পর চেষ্টা করুন।";
