@@ -577,12 +577,64 @@ def dashboard(request: Request):
 <section class="admin-section"><h2>অ্যাডমিন অপশন</h2><p>প্রয়োজনীয় বিভাগ নির্বাচন করে আলাদা পৃষ্ঠায় কাজ করুন।</p>
 <div class="admin-options" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px">
 <div class="admin-section"><h3>কৃষক তথ্য ব্যবস্থাপনা</h3><p>নিবন্ধিত কৃষকদের তথ্য দেখুন ও Excel ডাউনলোড করুন।</p><a class="btn primary" href="/admin/farmers">কৃষক তথ্য দেখুন</a></div>
-<div class="admin-section"><h3>অর্ডার ব্যবস্থাপনা</h3><p>অর্ডার খুঁজুন, ফিল্টার করুন এবং স্ট্যাটাস আপডেট করুন।</p><a class="btn primary" href="/admin/orders">অর্ডার পরিচালনা করুন</a></div>
+<div class="admin-section"><h3>পণ্য ব্যবস্থাপনা</h3><p>কৃষিপণ্য যোগ করুন এবং তালিকাভুক্ত পণ্য দেখুন।</p><a class="btn primary" href="/admin/products">পণ্য যোগ/দেখুন</a></div>\n<div class="admin-section"><h3>অর্ডার ব্যবস্থাপনা</h3><p>অর্ডার খুঁজুন, ফিল্টার করুন এবং স্ট্যাটাস আপডেট করুন।</p><a class="btn primary" href="/admin/orders">অর্ডার পরিচালনা করুন</a></div>
 <div class="admin-section"><h3>পার্টনার আবেদন অনুমোদন</h3><p>পার্টনার আবেদন দেখুন এবং অনুমোদন/বাতিল/স্থগিত করুন।</p><a class="btn primary" href="/admin/partners">পার্টনার আবেদন দেখুন <span>({pending_count} অপেক্ষমাণ)</span></a></div>
 <div class="admin-section"><h3>পার্টনার সাইট ব্যবস্থাপনা</h3><p>অনুমোদিত পার্টনার সাইটের তালিকা ও অবস্থা দেখুন।</p><a class="btn primary" href="/admin/sites">সাইট পরিচালনা করুন <span>({site_count})</span></a></div>
 <div class="admin-section"><h3>কার্যকলাপ লগ</h3><p>অ্যাডমিন ও সিস্টেমের কাজের লগ পর্যালোচনা করুন।</p><a class="btn primary" href="/admin/activity">সকল কার্যকলাপ দেখুন <span>({audit_count})</span></a></div>
 </div></section></main>"""
     return page("সুপার অ্যাডমিন", body)
+
+
+@app.get("/admin/products", response_class=HTMLResponse)
+def admin_products(request: Request):
+    if not require_admin(request):
+        return RedirectResponse("/admin", status_code=303)
+    with db() as c:
+        partners = c.execute("SELECT id,shop_name,subdomain FROM partner_requests WHERE status='অনুমোদিত' ORDER BY shop_name").fetchall()
+        products = c.execute("""SELECT pp.*, pr.shop_name FROM partner_products pp
+            JOIN partner_requests pr ON pr.id=pp.partner_request_id ORDER BY pp.id DESC""").fetchall()
+    partner_options = ''.join(f'<option value="{p["id"]}">{esc(p["shop_name"])} ({esc(p["subdomain"])})</option>' for p in partners)
+    rows = ''.join(f"""<tr><td>{p['id']}</td><td><b>{esc(p['name'])}</b><br><small>{esc(p['description'])}</small></td><td>{esc(p['shop_name'])}</td><td>{esc(p['price'])} / {esc(p['unit'])}</td><td>{esc(p['status'])}</td></tr>""" for p in products)
+    body=f"""<main class="admin-main"><div class="admin-head"><div><div class="eyebrow">OWNER CONTROL</div><h1>পণ্য ব্যবস্থাপনা</h1><p>পণ্য যোগ করুন ও তালিকাভুক্ত পণ্য দেখুন</p></div><a class="btn light" href="/admin/dashboard">ড্যাশবোর্ডে ফিরুন</a></div>
+<section class="admin-section"><h2>নতুন পণ্য যোগ করুন</h2>
+<form class="form card" method="post" action="/admin/product" enctype="multipart/form-data">
+<div class="form-grid"><label>পার্টনার দোকান<select name="partner_id" required><option value="">দোকান নির্বাচন করুন</option>{partner_options}</select></label>
+<label>পণ্যের নাম<input name="name" required maxlength="140"></label>
+<label>দাম<input name="price" required maxlength="30" placeholder="যেমন: ৫০"></label>
+<label>একক<input name="unit" required maxlength="40" placeholder="যেমন: কেজি, লিটার, প্যাকেট"></label>
+<label class="wide">পণ্যের ছবি (JPG, PNG বা WebP; সর্বোচ্চ ৪ MB)<input type="file" name="image" accept="image/jpeg,image/png,image/webp"></label>
+<label class="wide">বিবরণ<textarea name="description" maxlength="400" rows="3"></textarea></label></div>
+<button class="btn primary" type="submit">পণ্য যোগ করুন</button></form></section>
+<section class="admin-section"><h2>সকল পণ্য ({len(products)})</h2><div class="table-wrap"><table><thead><tr><th>আইডি</th><th>পণ্য</th><th>দোকান</th><th>দাম</th><th>অবস্থা</th></tr></thead><tbody>{rows or '<tr><td colspan="5">এখনো পণ্য যোগ করা হয়নি।</td></tr>'}</tbody></table></div></section></main>"""
+    return page("পণ্য ব্যবস্থাপনা", body)
+
+
+@app.post("/admin/product")
+async def admin_add_product(request: Request, partner_id: int=Form(...), name: str=Form(...),
+        price: str=Form(...), unit: str=Form(...), description: str=Form(""),
+        image: UploadFile | None=File(default=None)):
+    if not require_admin(request):
+        raise HTTPException(401, "অ্যাডমিন লগইন প্রয়োজন।")
+    values = [clean(name, 140), clean(price, 30), clean(unit, 40), clean(description, 400)]
+    if not values[0] or not values[1] or not values[2] or contains_forbidden(*values):
+        raise HTTPException(400, "পণ্যের তথ্য সঠিকভাবে দিন।")
+    image_data = None
+    if image and image.filename:
+        if image.content_type not in ["image/jpeg", "image/png", "image/webp"]:
+            raise HTTPException(400, "শুধু JPG, PNG বা WebP ছবি দিন।")
+        image_data = await image.read(4 * 1024 * 1024 + 1)
+        if len(image_data) > 4 * 1024 * 1024:
+            raise HTTPException(400, "ছবির সাইজ ৪ MB-এর কম হতে হবে।")
+    with db() as c:
+        partner = c.execute(sql_placeholders("SELECT status FROM partner_requests WHERE id=?"), (partner_id,)).fetchone()
+        if not partner or partner["status"] != "অনুমোদিত":
+            raise HTTPException(400, "অনুমোদিত পার্টনার দোকান নির্বাচন করুন।")
+        c.execute(sql_placeholders("""INSERT INTO partner_products
+            (partner_request_id,name,price,unit,description,created_at,image_data)
+            VALUES(?,?,?,?,?,?,?)"""),
+            (partner_id, values[0], values[1], values[2], values[3], now(), image_data))
+    log_action(request.session.get("admin", "admin"), "product_created", "partner_product", partner_id)
+    return RedirectResponse("/admin/products", status_code=303)
 
 
 @app.get("/admin/partners", response_class=HTMLResponse)
