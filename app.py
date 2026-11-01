@@ -823,7 +823,7 @@ def farmer_profile(request: Request):
    }});
    division.form.addEventListener("submit",()=>{{
      [division,district,upazila,union].forEach(el=>{{
-       const opt=el.options[el.selectedIndex]; if(opt && opt.dataset.name) el.value=opt.dataset.name;
+       const opt=el.options[el.selectedIndex]; if(opt && opt.dataset.name) opt.value=opt.dataset.name;
      }});
    }});
    status.textContent="বাংলাদেশের ঠিকানার তালিকা প্রস্তুত। বিভাগ নির্বাচন করুন।";
