@@ -640,11 +640,17 @@ def export_farmers_excel(request: Request):
         ws.column_dimensions[letter].width = min(max(max(len(str(cell.value or "")) for cell in col) + 2, 14), 38)
     output = BytesIO()
     wb.save(output)
-    output.seek(0)
+    excel_bytes = output.getvalue()
     log_action(request.session["admin"], "export_farmers_excel", "farmers", len(rows))
-    return StreamingResponse(output,
+    return Response(
+        content=excel_bytes,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": "attachment; filename=ifarmer_farmers.xlsx"})
+        headers={
+            "Content-Disposition": 'attachment; filename="ifarmer_farmers.xlsx"',
+            "Content-Length": str(len(excel_bytes)),
+            "Cache-Control": "no-store"
+        }
+    )
 
 @app.post("/admin/order-status")
 def order_status(request: Request, order_id: int=Form(...), status: str=Form(...)):
