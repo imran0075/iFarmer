@@ -589,9 +589,10 @@ def admin_farmers(request: Request):
     per_page = 50
     with db() as c:
         total = c.execute("SELECT COUNT(*) AS n FROM farmers").fetchone()["n"]
-        rows = c.execute("""SELECT phone,full_name,father_name,nid_number,birth_registration_number,
+        farmer_query = """SELECT phone,full_name,father_name,nid_number,birth_registration_number,
             division,district,upazila,union_name,village,home_address,created_at,last_login_at
-            FROM farmers ORDER BY created_at DESC LIMIT ? OFFSET ?""",
+            FROM farmers ORDER BY created_at DESC LIMIT ? OFFSET ?"""
+        rows = c.execute(sql_placeholders(farmer_query),
             (per_page, (page_no-1)*per_page)).fetchall()
     headers = ["মোবাইল", "পূর্ণ নাম", "পিতার নাম", "NID", "জন্মনিবন্ধন",
                "বিভাগ", "জেলা", "উপজেলা", "ইউনিয়ন/পৌরসভা", "গ্রাম", "পূর্ণ ঠিকানা",
