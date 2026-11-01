@@ -571,12 +571,47 @@ def dashboard(request: Request):
         return f"""<tr><td>PS-{r['id']:05d}</td><td><b>{esc(r['shop_name'])}</b><br>{esc(r['owner_name'])}<br>{esc(r['phone'])}</td><td><code>{esc(r['subdomain'])}</code><br>{esc(r['area'])}</td><td>{esc(r['status'])}<br><small>{esc(r['created_at'])}</small></td></tr>"""
     body = f"""<main class="admin-main"><div class="admin-head"><div><div class="eyebrow">OWNER CONTROL</div><h1>সুপার অ্যাডমিন ড্যাশবোর্ড</h1><p>লগইন: {esc(request.session.get('admin'))}</p></div><form method="post" action="/admin/logout"><button class="btn light">লগআউট</button></form></div>
 <div class="stats admin-stats"><div><b>{len(orders)}</b><span>সাম্প্রতিক অর্ডার</span></div><div><b>{len(partners)}</b><span>পার্টনার আবেদন</span></div><div><b>{len(sites)}</b><span>পার্টনার সাইট</span></div><div><b>{sum(1 for r in partners if r['status']=='অপেক্ষমাণ')}</b><span>অনুমোদনের অপেক্ষায়</span></div></div>
-<section class="admin-section"><h2>কৃষক তথ্য সংগ্রহ</h2><p>সকল নিবন্ধিত কৃষকের প্রোফাইল ও ঠিকানা এক্সেল ফাইলে সংগ্রহ করুন।</p><a class="btn primary" href="/admin/export/farmers.xlsx">সকল কৃষকের Excel ডাউনলোড</a></section>
+<section class="admin-section"><h2>কৃষক তথ্য ব্যবস্থাপনা</h2><p>প্রথমে নিবন্ধিত কৃষকদের সব তথ্য অনলাইনে দেখুন। প্রয়োজন হলে পরে Excel ডাউনলোড করুন।</p><a class="btn primary" href="/admin/farmers">সকল কৃষকের তথ্য দেখুন</a> <a class="btn light" href="/admin/export/farmers.xlsx">Excel ডাউনলোড</a></section>
 <section class="admin-section"><h2>অর্ডার ব্যবস্থাপনা</h2><div class="table-wrap"><table><thead><tr><th>নম্বর / সময়</th><th>ক্রেতা</th><th>অর্ডার</th><th>স্ট্যাটাস</th></tr></thead><tbody>{''.join(order_row(r) for r in orders) or '<tr><td colspan="4">এখনো কোনো অর্ডার নেই।</td></tr>'}</tbody></table></div></section>
 <section class="admin-section"><h2>পার্টনার সাইট অনুমোদন</h2><div class="table-wrap"><table><thead><tr><th>আবেদন</th><th>দোকান/যোগাযোগ</th><th>সাবডোমেইন/এলাকা</th><th>সিদ্ধান্ত</th></tr></thead><tbody>{''.join(partner_row(r) for r in partners) or '<tr><td colspan="4">এখনো কোনো আবেদন নেই।</td></tr>'}</tbody></table></div><p class="fine">স্ট্যাটাস অনুমোদিত করলেও DNS বা সাবডোমেইন স্বয়ংক্রিয়ভাবে তৈরি হয় না।</p></section>
 <section class="admin-section"><h2>পার্টনার সাইট ব্যবস্থাপনা</h2><div class="table-wrap"><table><thead><tr><th>সাইট আইডি</th><th>দোকান/মালিক</th><th>সাবডোমেইন/এলাকা</th><th>অবস্থা</th></tr></thead><tbody>{''.join(site_row(r) for r in sites) or '<tr><td colspan="4">এখনো কোনো অনুমোদিত পার্টনার সাইট নেই। কোনো আবেদনকে “অনুমোদিত” করলে এখানে যুক্ত হবে।</td></tr>'}</tbody></table></div><p class="fine">এটি অনুমোদিত সাইটের তালিকা ও অবস্থা পরিচালনা করে। বাস্তবে সাবডোমেইন চালু করতে নিজস্ব ডোমেইন, DNS ও হোস্টিং কনফিগারেশন লাগবে।</p></section>
 <section class="admin-section"><h2>সাম্প্রতিক কার্যকলাপ</h2><div class="table-wrap"><table><thead><tr><th>সময়</th><th>ব্যবহারকারী</th><th>কাজ</th><th>বিষয়</th></tr></thead><tbody>{''.join(f"<tr><td>{esc(r['created_at'])}</td><td>{esc(r['actor'])}</td><td>{esc(r['action'])}</td><td>{esc(r['item_type'])} {esc(r['item_id'])}</td></tr>" for r in audits) or '<tr><td colspan="4">কোনো লগ নেই।</td></tr>'}</tbody></table></div></section></main>"""
     return page("সুপার অ্যাডমিন", body)
+
+@app.get("/admin/farmers", response_class=HTMLResponse)
+def admin_farmers(request: Request):
+    if not require_admin(request):
+        return RedirectResponse("/admin", status_code=303)
+    try:
+        page_no = max(1, int(request.query_params.get("page", "1")))
+    except ValueError:
+        page_no = 1
+    per_page = 50
+    with db() as c:
+        total = c.execute("SELECT COUNT(*) AS n FROM farmers").fetchone()["n"]
+        rows = c.execute("""SELECT phone,full_name,father_name,nid_number,birth_registration_number,
+            division,district,upazila,union_name,village,home_address,created_at,last_login_at
+            FROM farmers ORDER BY created_at DESC LIMIT ? OFFSET ?""",
+            (per_page, (page_no-1)*per_page)).fetchall()
+    headers = ["মোবাইল", "পূর্ণ নাম", "পিতার নাম", "NID", "জন্মনিবন্ধন",
+               "বিভাগ", "জেলা", "উপজেলা", "ইউনিয়ন/পৌরসভা", "গ্রাম", "পূর্ণ ঠিকানা",
+               "নিবন্ধনের সময়", "সর্বশেষ লগইন"]
+    keys = ["phone","full_name","father_name","nid_number","birth_registration_number",
+            "division","district","upazila","union_name","village","home_address","created_at","last_login_at"]
+    table_head = "".join(f"<th>{h}</th>" for h in headers)
+    table_rows = "".join("<tr>" + "".join(f"<td>{esc(row[k] or '')}</td>" for k in keys) + "</tr>" for row in rows)
+    total_pages = max(1, (total + per_page - 1)//per_page)
+    prev_link = f'<a class="btn light" href="/admin/farmers?page={page_no-1}">আগের পৃষ্ঠা</a>' if page_no > 1 else ""
+    next_link = f'<a class="btn light" href="/admin/farmers?page={page_no+1}">পরের পৃষ্ঠা</a>' if page_no < total_pages else ""
+    body = f"""<main class="admin-main">
+<div class="admin-head"><div><div class="eyebrow">OWNER CONTROL</div><h1>নিবন্ধিত কৃষকের তথ্য</h1>
+<p>মোট কৃষক: <b>{total}</b> · প্রতি পাতায় সর্বোচ্চ {per_page} জন · পৃষ্ঠা {page_no}/{total_pages}</p></div>
+<a class="btn light" href="/admin/dashboard">ড্যাশবোর্ডে ফিরুন</a></div>
+<section class="admin-section"><p>নিরাপত্তার জন্য এই তালিকা শুধু সুপার অ্যাডমিন দেখতে পারবেন।</p>
+<a class="btn primary" href="/admin/export/farmers.xlsx">সকল কৃষকের Excel ডাউনলোড</a>
+<div class="table-wrap"><table><thead><tr>{table_head}</tr></thead><tbody>{table_rows or '<tr><td colspan="13">এখনো কোনো কৃষক নিবন্ধন করেননি।</td></tr>'}</tbody></table></div>
+<div class="actions">{prev_link}{next_link}</div></section></main>"""
+    return page("কৃষকের তথ্য", body)
 
 @app.get("/admin/export/farmers.xlsx")
 def export_farmers_excel(request: Request):
