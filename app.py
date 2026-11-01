@@ -209,9 +209,7 @@ def home(request: Request):
 function selectOrderProduct(productId) {{
   const product = document.getElementById("order-product");
   product.value = String(productId);
-  const trigger = document.getElementById("order-details-trigger");
-  trigger.hidden = false;
-  trigger.scrollIntoView({{behavior: "smooth", block: "center"}});
+  showOrderForm();
 }}
 function showOrderForm() {{
   const trigger = document.getElementById("order-details-trigger");
