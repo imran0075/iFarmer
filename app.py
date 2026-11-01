@@ -784,10 +784,10 @@ def farmer_profile(request: Request):
 <label>কৃষকের পূর্ণ নাম<input name="full_name" required value="{esc(farmer['full_name'])}"></label>
 <label>পিতার নাম *<input name="father_name" required value="{esc(farmer['father_name'])}" placeholder="পিতার পূর্ণ নাম লিখুন"></label>
 <label>যাচাইকৃত মোবাইল নম্বর<input value="{esc(farmer['phone'])}" readonly></label>
-<label>বিভাগ<select id="division" required><option value="">বিভাগ নির্বাচন করুন</option></select></label><input type="hidden" id="division_value" name="division">
-<label>জেলা<select id="district" required disabled><option value="">আগে বিভাগ নির্বাচন করুন</option></select></label><input type="hidden" id="district_value" name="district">
-<label>উপজেলা<select id="upazila" required disabled><option value="">আগে জেলা নির্বাচন করুন</option></select></label><input type="hidden" id="upazila_value" name="upazila">
-<label>ইউনিয়ন/পৌরসভা<select id="union_name" required disabled><option value="">আগে উপজেলা নির্বাচন করুন</option></select></label><input type="hidden" id="union_value" name="union_name">
+<label>বিভাগ<select id="division" name="division" required><option value="">বিভাগ নির্বাচন করুন</option></select></label>
+<label>জেলা<select id="district" name="district" required disabled><option value="">আগে বিভাগ নির্বাচন করুন</option></select></label>
+<label>উপজেলা<select id="upazila" name="upazila" required disabled><option value="">আগে জেলা নির্বাচন করুন</option></select></label>
+<label>ইউনিয়ন/পৌরসভা<select id="union_name" name="union_name" required disabled><option value="">আগে উপজেলা নির্বাচন করুন</option></select></label>
 <label>গ্রামের নাম<input name="village" required value="{esc(farmer['village'])}" placeholder="নিজের গ্রামের নাম লিখুন"></label>
 <label>বাড়ির পূর্ণ ঠিকানা<textarea name="home_address" required rows="3" placeholder="বাড়ি/রোড/ওয়ার্ড/বাজারসহ পূর্ণ ঠিকানা লিখুন">{esc(farmer['home_address'])}</textarea></label>
 <label>NID নম্বর (ঐচ্ছিক)<input name="nid_number" inputmode="numeric" maxlength="17" value="{esc(farmer['nid_number'])}" placeholder="জাতীয় পরিচয়পত্র নম্বর"></label>
@@ -802,7 +802,7 @@ def farmer_profile(request: Request):
  const status = document.getElementById("geo-status");
  const fill = (el, items, label) => {{
    el.innerHTML = '<option value="">'+label+'</option>';
-   items.forEach(item => {{ const o=document.createElement("option"); o.value=item.id; o.textContent=item.bn_name || item.name; o.dataset.name=item.bn_name || item.name; el.appendChild(o); }});
+   items.forEach(item => {{ const o=document.createElement("option"); o.value=item.bn_name || item.name; o.textContent=item.bn_name || item.name; el.appendChild(o); }});
    el.disabled=false;
  }};
  const reset=(el,label)=>{{el.innerHTML='<option value="">'+label+'</option>';el.disabled=true;}};
