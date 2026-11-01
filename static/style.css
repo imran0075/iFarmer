@@ -49,3 +49,9 @@ footer b,footer a{color:#c8ef8b}footer p{color:#c1d9c9}footer small{color:#91b69
   .mobile-dock a span{font-size:11px;font-weight:700}
   footer{padding-bottom:24px}
 }
+
+
+/* Android Chrome: keep order-form controls reliably focusable and editable */
+.form input,.form select,.form textarea{font-size:16px;line-height:1.5;pointer-events:auto;touch-action:manipulation;position:relative;z-index:1;-webkit-user-select:text;user-select:text;}
+.form input:focus,.form select:focus,.form textarea:focus{outline:2px solid #b3dec0;outline-offset:1px;border-color:var(--green);}
+.form label{position:relative;}
