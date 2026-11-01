@@ -56,6 +56,10 @@ def init_db():
         c.execute("""CREATE TABLE IF NOT EXISTS farmers(
             firebase_uid TEXT PRIMARY KEY, phone TEXT NOT NULL UNIQUE,
             created_at TEXT NOT NULL, last_login_at TEXT NOT NULL)""")
+        farmer_columns = [row["name"] for row in c.execute("SELECT column_name AS name FROM information_schema.columns WHERE table_name='farmers'").fetchall()] if DATABASE_URL else [row["name"] for row in c.execute("PRAGMA table_info(farmers)").fetchall()]
+        for col in ["full_name", "division", "district", "upazila", "union_name", "village", "home_address"]:
+            if col not in farmer_columns:
+                c.execute("ALTER TABLE farmers ADD COLUMN " + col + " TEXT DEFAULT ')")
         c.execute(f"""CREATE TABLE IF NOT EXISTS orders(
             id {primary_key}, name TEXT NOT NULL, phone TEXT NOT NULL,
             address TEXT NOT NULL, product TEXT NOT NULL, quantity TEXT NOT NULL,
@@ -743,6 +747,63 @@ def farmer_login():
     </script>
     """.replace("{config_json}", config_json)
     return page("মোবাইল OTP লগইন", body)
+
+
+def logged_farmer(request: Request):
+    uid = request.session.get("farmer_uid")
+    if not uid:
+        return None
+    with db() as c:
+        return c.execute(sql_placeholders("SELECT * FROM farmers WHERE firebase_uid=?"), (uid,)).fetchone()
+
+@app.get("/farmer/profile", response_class=HTMLResponse)
+def farmer_profile(request: Request):
+    farmer = logged_farmer(request)
+    if not farmer:
+        return RedirectResponse("/login", status_code=303)
+    body = f"""<main class="narrow section"><h1>কৃষক প্রোফাইল পূরণ করুন</h1>
+<p>গ্রামের নাম ও বাড়ির পূর্ণ ঠিকানা নিজে লিখুন।</p>
+<form class="form card" method="post" action="/farmer/profile">
+<label>কৃষকের পূর্ণ নাম<input name="full_name" required value="{esc(farmer['full_name'])}"></label>
+<label>যাচাইকৃত মোবাইল নম্বর<input value="{esc(farmer['phone'])}" readonly></label>
+<label>বিভাগ<input name="division" required value="{esc(farmer['division'])}"></label>
+<label>জেলা<input name="district" required value="{esc(farmer['district'])}"></label>
+<label>উপজেলা<input name="upazila" required value="{esc(farmer['upazila'])}"></label>
+<label>ইউনিয়ন/পৌরসভা<input name="union_name" required value="{esc(farmer['union_name'])}"></label>
+<label>গ্রামের নাম<input name="village" required value="{esc(farmer['village'])}" placeholder="নিজের গ্রামের নাম লিখুন"></label>
+<label>বাড়ির পূর্ণ ঠিকানা<textarea name="home_address" required rows="3" placeholder="বাড়ি/রোড/ওয়ার্ড/বাজারসহ পূর্ণ ঠিকানা লিখুন">{esc(farmer['home_address'])}</textarea></label>
+<button class="btn primary" type="submit">প্রোফাইল সংরক্ষণ</button></form></main>"""
+    return page("কৃষক প্রোফাইল", body)
+
+@app.post("/farmer/profile")
+def save_farmer_profile(request: Request, full_name: str=Form(...), division: str=Form(...),
+                        district: str=Form(...), upazila: str=Form(...), union_name: str=Form(...),
+                        village: str=Form(...), home_address: str=Form(...)):
+    farmer = logged_farmer(request)
+    if not farmer:
+        return RedirectResponse("/login", status_code=303)
+    values = [clean(full_name,100), clean(division,100), clean(district,100),
+              clean(upazila,100), clean(union_name,120), clean(village,150), clean(home_address,500)]
+    if not all(values):
+        raise HTTPException(400, "সব তথ্য পূরণ করুন।")
+    with db() as c:
+        c.execute(sql_placeholders("UPDATE farmers SET full_name=?,division=?,district=?,upazila=?,union_name=?,village=?,home_address=? WHERE firebase_uid=?"), (*values, request.session["farmer_uid"]))
+    return RedirectResponse("/farmer/dashboard", status_code=303)
+
+@app.get("/farmer/dashboard", response_class=HTMLResponse)
+def farmer_dashboard(request: Request):
+    farmer = logged_farmer(request)
+    if not farmer:
+        return RedirectResponse("/login", status_code=303)
+    if not all(farmer[k] for k in ["full_name","division","district","upazila","union_name","village","home_address"]):
+        return RedirectResponse("/farmer/profile", status_code=303)
+    body = f"""<main class="narrow section"><h1>স্বাগতম, {esc(farmer['full_name'])}</h1><section class="card">
+<p><b>মোবাইল:</b> {esc(farmer['phone'])}</p><p><b>বিভাগ:</b> {esc(farmer['division'])}</p>
+<p><b>জেলা:</b> {esc(farmer['district'])}</p><p><b>উপজেলা:</b> {esc(farmer['upazila'])}</p>
+<p><b>ইউনিয়ন:</b> {esc(farmer['union_name'])}</p><p><b>গ্রাম:</b> {esc(farmer['village'])}</p>
+<p><b>বাড়ির ঠিকানা:</b> {esc(farmer['home_address'])}</p>
+<a class="btn light" href="/farmer/profile">প্রোফাইল সম্পাদনা</a></section></main>"""
+    return page("কৃষক ড্যাশবোর্ড", body)
 
 @app.get("/privacy", response_class=HTMLResponse)
 def privacy():
