@@ -141,6 +141,21 @@ def page(title, body, active=""):
 <footer><b>iFarmer</b><p>কৃষির ডিজিটাল সহযাত্রী</p><div><a href="/privacy">গোপনীয়তা</a> · <a href="/terms">শর্তাবলি</a> · <a href="/admin">মালিক লগইন</a></div>
 <small>© {datetime.now().year} iFarmer</small></footer></body></html>"""
 
+@app.get("/agri", response_class=HTMLResponse)
+def agriculture_home():
+    body = """<main class="narrow"><section class="section-head"><div><div class="eyebrow">iFarmer কৃষি সহায়ক</div><h1>কৃষি সহায়ক সেবা</h1></div><p>আপনার প্রয়োজন অনুযায়ী বিষয় নির্বাচন করুন।</p></section>
+<section class="cards">
+<article class="card"><div class="card-icon">🌦️</div><h3>কৃষি আবহাওয়া</h3><p>জেলাভিত্তিক তাপমাত্রা, বৃষ্টি ও বাতাসের তথ্য।</p><a class="btn primary" href="/agri/weather">আবহাওয়া দেখুন</a></article>
+<article class="card"><div class="card-icon">🧮</div><h3>সার ক্যালকুলেটর</h3><p>জমির পরিমাণ ও সুপারিশকৃত মাত্রা দিয়ে মোট সার হিসাব।</p><a class="btn primary" href="/agri/fertilizer">সার হিসাব করুন</a></article>
+<article class="card"><div class="card-icon">🧴</div><h3>কীটনাশক ক্যালকুলেটর</h3><p>অনুমোদিত পণ্যের লেবেলে দেওয়া মাত্রা অনুযায়ী হিসাব।</p><a class="btn primary" href="/agri/pesticide">মাত্রা হিসাব করুন</a></article>
+<article class="card"><div class="card-icon">📷</div><h3>ফসলের সমস্যা</h3><p>ফসলের ছবি ও লক্ষণ জমা দিন।</p><a class="btn primary" href="/agri/diagnose">ছবি জমা দিন</a></article>
+<article class="card"><div class="card-icon">🌾</div><h3>ফসল</h3><p>ধান, গম, ভুট্টা, শাকসবজি ও ফলের পরামর্শ।</p><a class="btn primary" href="/agri/category/crop">ফসল বিভাগে যান</a></article>
+<article class="card"><div class="card-icon">🐟</div><h3>মৎস্য</h3><p>মাছ চাষ, পানির গুণাগুণ ও পরিচর্যার সহায়তা।</p><a class="btn primary" href="/agri/category/fish">মৎস্য বিভাগে যান</a></article>
+<article class="card"><div class="card-icon">🐄</div><h3>প্রাণিসম্পদ</h3><p>গরু, ছাগল ও ভেড়ার পালন ও পরিচর্যা।</p><a class="btn primary" href="/agri/category/livestock">প্রাণিসম্পদ বিভাগে যান</a></article>
+<article class="card"><div class="card-icon">🐔</div><h3>পোল্ট্রি</h3><p>মুরগি, হাঁস, টার্কি ও কোয়েল পালন।</p><a class="btn primary" href="/agri/category/poultry">পোল্ট্রি বিভাগে যান</a></article>
+</section></main>"""
+    return page("কৃষি সহায়ক", body)
+
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
     farmer = logged_farmer(request)
@@ -173,21 +188,8 @@ def home(request: Request):
 </section>
 <section class="stats"><div><b>🌾</b><span>কৃষি পণ্য</span></div><div><b>🛒</b><span>সহজ অর্ডার</span></div><div><b>📞</b><span>ফোনে নিশ্চিতকরণ</span></div><div><b>🏪</b><span>স্থানীয় পার্টনার</span></div></section>
 <section class="section" id="agriculture">
-<div class="section-head"><div><div class="eyebrow">কৃষকের ডিজিটাল সহকারী</div><h2>কৃষি সহায়ক সেবা</h2></div><p>আবহাওয়া দেখুন, জমির হিসাব করুন এবং ফসলের সমস্যা সম্পর্কে তথ্য জমা দিন।</p></div>
-<div class="cards">
-<article class="card"><div class="card-icon">🌦️</div><h3>কৃষি আবহাওয়া</h3><p>জেলাভিত্তিক তাপমাত্রা, বৃষ্টি ও বাতাসের তথ্য।</p><a class="btn primary" href="/agri/weather">আবহাওয়া দেখুন</a></article>
-<article class="card"><div class="card-icon">🧮</div><h3>সার ক্যালকুলেটর</h3><p>জমির পরিমাণ ও সুপারিশকৃত মাত্রা দিয়ে মোট সার হিসাব।</p><a class="btn primary" href="/agri/fertilizer">সার হিসাব করুন</a></article>
-<article class="card"><div class="card-icon">🧴</div><h3>কীটনাশক ক্যালকুলেটর</h3><p>অনুমোদিত পণ্যের লেবেলে দেওয়া মাত্রা অনুযায়ী হিসাব।</p><a class="btn primary" href="/agri/pesticide">মাত্রা হিসাব করুন</a></article>
-<article class="card"><div class="card-icon">📷</div><h3>ফসলের সমস্যা</h3><p>ফসলের ছবি ও লক্ষণ জমা দিন; AI রোগ শনাক্তকরণ এখনো চালু নয়।</p><a class="btn primary" href="/agri/diagnose">ছবি জমা দিন</a></article>
-</div></section>
-<section class="section" id="agri-categories">
-<div class="section-head"><div><div class="eyebrow">এক প্ল্যাটফর্মে সব সেবা</div><h2>কৃষি, মৎস্য ও প্রাণিসম্পদ</h2></div><p>আপনার প্রয়োজনীয় বিভাগ বেছে নিয়ে সংশ্লিষ্ট পরামর্শ ও সেবা নিন।</p></div>
-<div class="cards">
-<article class="card"><div class="card-icon">🌾</div><h3>ফসল</h3><p>ধান, গম, ভুট্টা, শাকসবজি ও ফলের রোগ-পোকা এবং পরিচর্যার পরামর্শ।</p><a class="btn primary" href="/agri/category/crop">ফসল বিভাগে যান</a></article>
-<article class="card"><div class="card-icon">🐟</div><h3>মৎস্য</h3><p>মাছের চাষ, পানির গুণাগুণ, রোগ শনাক্তকরণ ও পরিচর্যার সহায়তা।</p><a class="btn primary" href="/agri/category/fish">মৎস্য বিভাগে যান</a></article>
-<article class="card"><div class="card-icon">🐄</div><h3>প্রাণিজ</h3><p>গরু, ছাগল ও ভেড়ার পালন, খাদ্য, স্বাস্থ্য ও রোগ বিষয়ে সহায়তা।</p><a class="btn primary" href="/agri/category/livestock">প্রাণিজ বিভাগে যান</a></article>
-<article class="card"><div class="card-icon">🐔</div><h3>পোল্ট্রি</h3><p>মুরগি, হাঁস, টার্কি ও কোয়েল পালন, খাদ্য ও স্বাস্থ্য ব্যবস্থাপনা।</p><a class="btn primary" href="/agri/category/poultry">পোল্ট্রি বিভাগে যান</a></article>
-</div></section>
+<div class="section-head"><div><div class="eyebrow">কৃষকের ডিজিটাল সহকারী</div><h2>কৃষি আবহাওয়া</h2></div><p>জেলাভিত্তিক তাপমাত্রা, বৃষ্টি ও বাতাসের তথ্য।</p></div>
+<div class="cards"><article class="card"><div class="card-icon">🌦️</div><h3>কৃষি আবহাওয়া</h3><p>আপনার এলাকার আবহাওয়ার তথ্য দেখুন।</p><a class="btn primary" href="/agri/weather">আবহাওয়া দেখুন</a></article></div></section>
 <section id="products" class="section"><div class="section-head"><div><div class="eyebrow">iFarmer মার্কেটপ্লেস</div><h2>পার্টনারদের পণ্য</h2></div><p>পণ্যের প্রাপ্যতা, দাম ও ব্যবহার বিক্রেতার সঙ্গে নিশ্চিত করুন।</p></div>
 <div class="cards">{product_cards}</div></section>
 <section id="order" class="section order-section"><div class="section-head"><div><div class="eyebrow">অর্ডার রিকোয়েস্ট</div><h2>পণ্য অর্ডার</h2></div><p>পণ্য অর্ডার বাটনে চাপ দেওয়ার পর অর্ডারের তথ্য দিতে পারবেন।</p></div>
