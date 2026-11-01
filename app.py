@@ -565,24 +565,48 @@ def dashboard(request: Request):
     if not require_admin(request):
         return RedirectResponse("/admin", status_code=303)
     with db() as c:
-        orders = c.execute("SELECT * FROM orders ORDER BY id DESC LIMIT 100").fetchall()
-        partners = c.execute("SELECT * FROM partner_requests ORDER BY id DESC LIMIT 100").fetchall()
-        sites = c.execute("SELECT * FROM partner_sites ORDER BY id DESC LIMIT 100").fetchall()
-        audits = c.execute("SELECT * FROM audit ORDER BY id DESC LIMIT 40").fetchall()
-    def order_row(r):
-        return f"""<tr><td>IF-{r['id']:05d}<br><small>{esc(r['created_at'])}</small></td><td><b>{esc(r['name'])}</b><br>{esc(r['phone'])}<br>{esc(r['address'])}</td><td>{esc(r['product'])}<br>পরিমাণ: {esc(r['quantity'])}<br>{esc(r['payment'])}<br><small>{esc(r['notes'])}</small></td><td><form method="post" action="/admin/order-status"><input type="hidden" name="order_id" value="{r['id']}"><select name="status">{''.join(f'<option {"selected" if r["status"]==s else ""}>{s}</option>' for s in ["নতুন","ফোনে যোগাযোগ করতে হবে","নিশ্চিত","প্রসেসিং","ডেলিভারির পথে","সম্পন্ন","বাতিল"])}</select><button class="mini">আপডেট</button></form></td></tr>"""
-    def partner_row(r):
-        return f"""<tr class="partner-approval-row"><td><span class="mobile-label">আবেদন</span>IP-{r['id']:05d}<br><small>{esc(r['created_at'])}</small></td><td><span class="mobile-label">দোকান/যোগাযোগ</span><b>{esc(r['shop_name'])}</b><br>{esc(r['owner_name'])}<br>{esc(r['phone'])}<br>{esc(r['email'])}</td><td><span class="mobile-label">সাবডোমেইন/এলাকা</span><code>{esc(r['subdomain'])}</code><br>{esc(r['area'])}<br><small>{esc(r['description'])}</small></td><td class="partner-decision-cell"><span class="mobile-label">সিদ্ধান্ত</span><b>{esc(r['status'])}</b><form method="post" action="/admin/partner-status"><input type="hidden" name="partner_id" value="{r['id']}"><select name="status">{''.join(f'<option {"selected" if r["status"]==s else ""}>{s}</option>' for s in ["অপেক্ষমাণ","অনুমোদিত","বাতিল","স্থগিত"])}</select><button type="submit" class="mini">সিদ্ধান্ত সেভ</button></form></td></tr>"""
-    def site_row(r):
-        return f"""<tr><td>PS-{r['id']:05d}</td><td><b>{esc(r['shop_name'])}</b><br>{esc(r['owner_name'])}<br>{esc(r['phone'])}</td><td><code>{esc(r['subdomain'])}</code><br>{esc(r['area'])}</td><td>{esc(r['status'])}<br><small>{esc(r['created_at'])}</small></td></tr>"""
-    body = f"""<main class="admin-main"><div class="admin-head"><div><div class="eyebrow">OWNER CONTROL</div><h1>সুপার অ্যাডমিন ড্যাশবোর্ড</h1><p>লগইন: {esc(request.session.get('admin'))}</p></div><form method="post" action="/admin/logout"><button class="btn light">লগআউট</button></form></div>
-<div class="stats admin-stats"><div><b>{len(orders)}</b><span>সাম্প্রতিক অর্ডার</span></div><div><b>{len(partners)}</b><span>পার্টনার আবেদন</span></div><div><b>{len(sites)}</b><span>পার্টনার সাইট</span></div><div><b>{sum(1 for r in partners if r['status']=='অপেক্ষমাণ')}</b><span>অনুমোদনের অপেক্ষায়</span></div></div>
-<section class="admin-section"><h2>কৃষক তথ্য ব্যবস্থাপনা</h2><p>প্রথমে নিবন্ধিত কৃষকদের সব তথ্য অনলাইনে দেখুন। প্রয়োজন হলে পরে Excel ডাউনলোড করুন।</p><a class="btn primary" href="/admin/farmers">সকল কৃষকের তথ্য দেখুন</a> <a class="btn light" href="/admin/export/farmers.xlsx">Excel ডাউনলোড</a></section>
-<section class="admin-section"><h2>অর্ডার ব্যবস্থাপনা</h2><p>সব অর্ডার আলাদা পৃষ্ঠায় খুঁজুন, স্ট্যাটাস অনুযায়ী ফিল্টার করুন এবং আপডেট করুন।</p><a class="btn primary" href="/admin/orders">সব অর্ডার পরিচালনা করুন</a><div class="table-wrap"><table><thead><tr><th>নম্বর / সময়</th><th>ক্রেতা</th><th>অর্ডার</th><th>স্ট্যাটাস</th></tr></thead><tbody>{''.join(order_row(r) for r in orders) or '<tr><td colspan="4">এখনো কোনো অর্ডার নেই।</td></tr>'}</tbody></table></div></section>
-<section class="admin-section"><h2>পার্টনার সাইট অনুমোদন</h2><div class="table-wrap"><table><thead><tr><th>আবেদন</th><th>দোকান/যোগাযোগ</th><th>সাবডোমেইন/এলাকা</th><th>সিদ্ধান্ত</th></tr></thead><tbody>{''.join(partner_row(r) for r in partners) or '<tr><td colspan="4">এখনো কোনো আবেদন নেই।</td></tr>'}</tbody></table></div><p class="fine">স্ট্যাটাস অনুমোদিত করলেও DNS বা সাবডোমেইন স্বয়ংক্রিয়ভাবে তৈরি হয় না।</p></section>
-<section class="admin-section"><h2>পার্টনার সাইট ব্যবস্থাপনা</h2><div class="table-wrap"><table><thead><tr><th>সাইট আইডি</th><th>দোকান/মালিক</th><th>সাবডোমেইন/এলাকা</th><th>অবস্থা</th></tr></thead><tbody>{''.join(site_row(r) for r in sites) or '<tr><td colspan="4">এখনো কোনো অনুমোদিত পার্টনার সাইট নেই। কোনো আবেদনকে “অনুমোদিত” করলে এখানে যুক্ত হবে।</td></tr>'}</tbody></table></div><p class="fine">এটি অনুমোদিত সাইটের তালিকা ও অবস্থা পরিচালনা করে। বাস্তবে সাবডোমেইন চালু করতে নিজস্ব ডোমেইন, DNS ও হোস্টিং কনফিগারেশন লাগবে।</p></section>
-<section class="admin-section"><h2>কার্যকলাপ লগ</h2><p>অ্যাডমিন ও সিস্টেমের সাম্প্রতিক কার্যকলাপ আলাদা পৃষ্ঠায় দেখুন।</p><a class="btn primary" href="/admin/activity">সকল কার্যকলাপ দেখুন</a></section></main>"""
+        farmer_count = c.execute("SELECT COUNT(*) AS n FROM farmers").fetchone()["n"]
+        order_count = c.execute("SELECT COUNT(*) AS n FROM orders").fetchone()["n"]
+        partner_count = c.execute("SELECT COUNT(*) AS n FROM partner_requests").fetchone()["n"]
+        pending_count = c.execute("SELECT COUNT(*) AS n FROM partner_requests WHERE status='অপেক্ষমাণ'").fetchone()["n"]
+        site_count = c.execute("SELECT COUNT(*) AS n FROM partner_sites").fetchone()["n"]
+        audit_count = c.execute("SELECT COUNT(*) AS n FROM audit").fetchone()["n"]
+    body = f"""<main class="admin-main">
+<div class="admin-head"><div><div class="eyebrow">OWNER CONTROL</div><h1>সুপার অ্যাডমিন ড্যাশবোর্ড</h1><p>লগইন: {esc(request.session.get('admin'))}</p></div><form method="post" action="/admin/logout"><button class="btn light">লগআউট</button></form></div>
+<div class="stats admin-stats"><div><b>{farmer_count}</b><span>নিবন্ধিত কৃষক</span></div><div><b>{order_count}</b><span>মোট অর্ডার</span></div><div><b>{partner_count}</b><span>পার্টনার আবেদন</span></div><div><b>{pending_count}</b><span>অনুমোদনের অপেক্ষায়</span></div></div>
+<section class="admin-section"><h2>অ্যাডমিন অপশন</h2><p>প্রয়োজনীয় বিভাগ নির্বাচন করে আলাদা পৃষ্ঠায় কাজ করুন।</p>
+<div class="admin-options" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px">
+<div class="admin-section"><h3>কৃষক তথ্য ব্যবস্থাপনা</h3><p>নিবন্ধিত কৃষকদের তথ্য দেখুন ও Excel ডাউনলোড করুন।</p><a class="btn primary" href="/admin/farmers">কৃষক তথ্য দেখুন</a></div>
+<div class="admin-section"><h3>অর্ডার ব্যবস্থাপনা</h3><p>অর্ডার খুঁজুন, ফিল্টার করুন এবং স্ট্যাটাস আপডেট করুন।</p><a class="btn primary" href="/admin/orders">অর্ডার পরিচালনা করুন</a></div>
+<div class="admin-section"><h3>পার্টনার আবেদন অনুমোদন</h3><p>পার্টনার আবেদন দেখুন এবং অনুমোদন/বাতিল/স্থগিত করুন।</p><a class="btn primary" href="/admin/partners">পার্টনার আবেদন দেখুন <span>({pending_count} অপেক্ষমাণ)</span></a></div>
+<div class="admin-section"><h3>পার্টনার সাইট ব্যবস্থাপনা</h3><p>অনুমোদিত পার্টনার সাইটের তালিকা ও অবস্থা দেখুন।</p><a class="btn primary" href="/admin/sites">সাইট পরিচালনা করুন <span>({site_count})</span></a></div>
+<div class="admin-section"><h3>কার্যকলাপ লগ</h3><p>অ্যাডমিন ও সিস্টেমের কাজের লগ পর্যালোচনা করুন।</p><a class="btn primary" href="/admin/activity">সকল কার্যকলাপ দেখুন <span>({audit_count})</span></a></div>
+</div></section></main>"""
     return page("সুপার অ্যাডমিন", body)
+
+
+@app.get("/admin/partners", response_class=HTMLResponse)
+def admin_partners(request: Request):
+    if not require_admin(request):
+        return RedirectResponse("/admin", status_code=303)
+    with db() as c:
+        rows = c.execute("SELECT * FROM partner_requests ORDER BY id DESC").fetchall()
+    row_html = ''.join(f"""<tr><td>IP-{r['id']:05d}<br><small>{esc(r['created_at'])}</small></td><td><b>{esc(r['shop_name'])}</b><br>{esc(r['owner_name'])}<br>{esc(r['phone'])}<br>{esc(r['email'])}</td><td><code>{esc(r['subdomain'])}</code><br>{esc(r['area'])}<br><small>{esc(r['description'])}</small></td><td><b>{esc(r['status'])}</b><form method="post" action="/admin/partner-status"><input type="hidden" name="partner_id" value="{r['id']}"><input type="hidden" name="return_to" value="/admin/partners"><select name="status">{''.join(f'<option {"selected" if r["status"]==st else ""}>{st}</option>' for st in ["অপেক্ষমাণ","অনুমোদিত","বাতিল","স্থগিত"])}</select><button class="mini" type="submit">সিদ্ধান্ত সেভ</button></form></td></tr>""" for r in rows)
+    body=f"""<main class="admin-main"><div class="admin-head"><div><div class="eyebrow">OWNER CONTROL</div><h1>পার্টনার আবেদন অনুমোদন</h1><p>মোট আবেদন: {len(rows)}</p></div><a class="btn light" href="/admin/dashboard">ড্যাশবোর্ডে ফিরুন</a></div>
+<section class="admin-section"><div class="table-wrap"><table><thead><tr><th>আবেদন/সময়</th><th>দোকান/যোগাযোগ</th><th>সাবডোমেইন/এলাকা</th><th>সিদ্ধান্ত</th></tr></thead><tbody>{row_html or '<tr><td colspan="4">এখনো কোনো আবেদন নেই।</td></tr>'}</tbody></table></div><p class="fine">আবেদন অনুমোদন করলেও DNS বা সাবডোমেইন স্বয়ংক্রিয়ভাবে তৈরি হয় না।</p></section></main>"""
+    return page("পার্টনার আবেদন", body)
+
+
+@app.get("/admin/sites", response_class=HTMLResponse)
+def admin_sites(request: Request):
+    if not require_admin(request):
+        return RedirectResponse("/admin", status_code=303)
+    with db() as c:
+        rows = c.execute("SELECT * FROM partner_sites ORDER BY id DESC").fetchall()
+    row_html=''.join(f"<tr><td>PS-{r['id']:05d}</td><td><b>{esc(r['shop_name'])}</b><br>{esc(r['owner_name'])}<br>{esc(r['phone'])}</td><td><code>{esc(r['subdomain'])}</code><br>{esc(r['area'])}</td><td>{esc(r['status'])}<br><small>{esc(r['created_at'])}</small></td></tr>" for r in rows)
+    body=f"""<main class="admin-main"><div class="admin-head"><div><div class="eyebrow">OWNER CONTROL</div><h1>পার্টনার সাইট ব্যবস্থাপনা</h1><p>মোট সাইট: {len(rows)}</p></div><a class="btn light" href="/admin/dashboard">ড্যাশবোর্ডে ফিরুন</a></div>
+<section class="admin-section"><div class="table-wrap"><table><thead><tr><th>সাইট আইডি</th><th>দোকান/মালিক</th><th>সাবডোমেইন/এলাকা</th><th>অবস্থা</th></tr></thead><tbody>{row_html or '<tr><td colspan="4">এখনো কোনো পার্টনার সাইট নেই। কোনো আবেদন অনুমোদন করলে এখানে যুক্ত হবে।</td></tr>'}</tbody></table></div><p class="fine">সাবডোমেইন চালু করতে নিজস্ব ডোমেইন, DNS ও হোস্টিং কনফিগারেশন প্রয়োজন।</p></section></main>"""
+    return page("পার্টনার সাইট", body)
 
 @app.get("/admin/activity", response_class=HTMLResponse)
 def admin_activity(request: Request):
@@ -754,7 +778,7 @@ def order_status(request: Request, order_id: int=Form(...), status: str=Form(...
     return RedirectResponse("/admin/dashboard", status_code=303)
 
 @app.post("/admin/partner-status")
-def partner_status(request: Request, partner_id: int=Form(...), status: str=Form(...)):
+def partner_status(request: Request, partner_id: int=Form(...), status: str=Form(...), return_to: str=Form("/admin/dashboard")):
     if not require_admin(request):
         raise HTTPException(401, "লগইন প্রয়োজন।")
     allowed = ["অপেক্ষমাণ","অনুমোদিত","বাতিল","স্থগিত"]
