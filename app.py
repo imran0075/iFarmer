@@ -784,10 +784,10 @@ def farmer_profile(request: Request):
 <label>কৃষকের পূর্ণ নাম<input name="full_name" required value="{esc(farmer['full_name'])}"></label>
 <label>পিতার নাম *<input name="father_name" required value="{esc(farmer['father_name'])}" placeholder="পিতার পূর্ণ নাম লিখুন"></label>
 <label>যাচাইকৃত মোবাইল নম্বর<input value="{esc(farmer['phone'])}" readonly></label>
-<label>বিভাগ<select id="division" name="division" required><option value="">বিভাগ নির্বাচন করুন</option></select></label>
-<label>জেলা<select id="district" name="district" required disabled><option value="">আগে বিভাগ নির্বাচন করুন</option></select></label>
-<label>উপজেলা<select id="upazila" name="upazila" required disabled><option value="">আগে জেলা নির্বাচন করুন</option></select></label>
-<label>ইউনিয়ন/পৌরসভা<select id="union_name" name="union_name" required disabled><option value="">আগে উপজেলা নির্বাচন করুন</option></select></label>
+<label>বিভাগ<select id="division" required><option value="">বিভাগ নির্বাচন করুন</option></select></label><input type="hidden" id="division_value" name="division">
+<label>জেলা<select id="district" required disabled><option value="">আগে বিভাগ নির্বাচন করুন</option></select></label><input type="hidden" id="district_value" name="district">
+<label>উপজেলা<select id="upazila" required disabled><option value="">আগে জেলা নির্বাচন করুন</option></select></label><input type="hidden" id="upazila_value" name="upazila">
+<label>ইউনিয়ন/পৌরসভা<select id="union_name" required disabled><option value="">আগে উপজেলা নির্বাচন করুন</option></select></label><input type="hidden" id="union_value" name="union_name">
 <label>গ্রামের নাম<input name="village" required value="{esc(farmer['village'])}" placeholder="নিজের গ্রামের নাম লিখুন"></label>
 <label>বাড়ির পূর্ণ ঠিকানা<textarea name="home_address" required rows="3" placeholder="বাড়ি/রোড/ওয়ার্ড/বাজারসহ পূর্ণ ঠিকানা লিখুন">{esc(farmer['home_address'])}</textarea></label>
 <label>NID নম্বর (ঐচ্ছিক)<input name="nid_number" inputmode="numeric" maxlength="17" value="{esc(farmer['nid_number'])}" placeholder="জাতীয় পরিচয়পত্র নম্বর"></label>
@@ -821,11 +821,14 @@ def farmer_profile(request: Request):
      reset(union,"ইউনিয়ন/পৌরসভা নির্বাচন করুন");
      fill(union,un.filter(x=>String(x.upazila_id)===String(upazila.value)),"ইউনিয়ন/পৌরসভা নির্বাচন করুন");
    }});
-   division.form.addEventListener("submit",()=>{{
-     [division,district,upazila,union].forEach(el=>{{
-       const opt=el.options[el.selectedIndex]; if(opt && opt.dataset.name) opt.value=opt.dataset.name;
+   const syncAddress=()=>{{
+     [["division_value",division],["district_value",district],["upazila_value",upazila],["union_value",union]].forEach(([id,el])=>{{
+       const opt=el.options[el.selectedIndex];
+       document.getElementById(id).value=(opt && opt.dataset.name) ? opt.dataset.name : "";
      }});
-   }});
+   }};
+   [division,district,upazila,union].forEach(el=>el.addEventListener("change",syncAddress));
+   division.form.addEventListener("submit",syncAddress);
    status.textContent="বাংলাদেশের ঠিকানার তালিকা প্রস্তুত। বিভাগ নির্বাচন করুন।";
  }} catch(e) {{
    status.textContent="ঠিকানার তালিকা লোড হয়নি। পৃষ্ঠা রিফ্রেশ করুন বা কিছুক্ষণ পর চেষ্টা করুন।";
