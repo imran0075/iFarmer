@@ -142,7 +142,12 @@ def page(title, body, active=""):
 <small>© {datetime.now().year} iFarmer</small></footer></body></html>"""
 
 @app.get("/", response_class=HTMLResponse)
-def home():
+def home(request: Request):
+    farmer = logged_farmer(request)
+    saved_address = ""
+    if farmer:
+        saved_address = ", ".join(clean(farmer[k], 150) for k in
+            ["division", "district", "upazila", "union_name", "village", "home_address"] if farmer[k])
     with db() as c:
         products = c.execute(sql_placeholders("""SELECT pp.id,pp.name,pp.price,pp.unit,pp.description,
             pr.shop_name,pr.area,(pp.image_data IS NOT NULL) AS has_image FROM partner_products pp
@@ -187,11 +192,12 @@ def home():
 <section id="order" class="section order-section"><div class="section-head"><div><div class="eyebrow">অর্ডার রিকোয়েস্ট</div><h2>আপনার অর্ডারের তথ্য দিন</h2></div><p>ফর্ম পাঠানোর পর বিক্রেতা আপনার সঙ্গে যোগাযোগ করবেন।</p></div>
 <form class="form card" method="post" action="/order">
 <div class="form-grid">
-<label>আপনার নাম<input name="name" required maxlength="100" placeholder="পূর্ণ নাম"></label>
-<label>মোবাইল নম্বর<input name="phone" required inputmode="tel" maxlength="30" placeholder="01XXXXXXXXX"></label>
+<label>আপনার নাম<input name="name" required maxlength="100" value="{esc(farmer['full_name'] if farmer else '')}" placeholder="পূর্ণ নাম"></label>
+<label>মোবাইল নম্বর<input name="phone" required inputmode="tel" maxlength="30" value="{esc(farmer['phone'] if farmer else '')}" placeholder="01XXXXXXXXX"></label>
 <label class="wide">পণ্য নির্বাচন<select id="order-product" name="product_id" required><option value="">পণ্য নির্বাচন করুন</option>{''.join(f'<option value="{p["id"]}">{esc(p["name"])} — {esc(p["price"])} টাকা / {esc(p["unit"])} · {esc(p["shop_name"])}</option>' for p in products)}</select></label>
 <label>পরিমাণ<input name="quantity" required maxlength="80" placeholder="যেমন: ৫ প্যাকেট"></label>
-<label class="wide">ডেলিভারি ঠিকানা<input name="address" required maxlength="300" placeholder="গ্রাম, বাজার, উপজেলা, জেলা"></label>
+<label class="wide">ডেলিভারি ঠিকানা<input name="address" required maxlength="300" value="{esc(saved_address)}" placeholder="গ্রাম, বাজার, উপজেলা, জেলা"></label>
+{('<p class="fine wide">প্রোফাইলের ঠিকানা বসানো হয়েছে; প্রয়োজন হলে অর্ডারের জন্য পরিবর্তন করুন।</p>' if farmer and saved_address else '')}
 <label>পেমেন্ট পদ্ধতি<select name="payment"><option value="ক্যাশ অন ডেলিভারি">ক্যাশ অন ডেলিভারি (অনুরোধ)</option><option value="ফোনে আলোচনা">ফোনে আলোচনা করে ঠিক করব</option></select></label>
 <label>অতিরিক্ত তথ্য<input name="notes" maxlength="300" placeholder="ঐচ্ছিক"></label>
 </div><button class="btn primary" type="submit">অর্ডারের অনুরোধ পাঠান →</button>
