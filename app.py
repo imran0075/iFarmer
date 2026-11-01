@@ -795,28 +795,49 @@ def farmer_profile(request: Request):
 <p id="geo-status" class="fine" role="status">ঠিকানার তালিকা লোড হচ্ছে…</p>
 <button class="btn primary" type="submit">প্রোফাইল সংরক্ষণ</button></form>
 <script>
-(async function () {{
- const base = "https://bdapis.com/api/v1.2";
+(async function () {
+ const base = "https://bdlocation.vercel.app";
  const division = document.getElementById("division"), district = document.getElementById("district");
  const upazila = document.getElementById("upazila"), union = document.getElementById("union_name");
  const status = document.getElementById("geo-status");
- const fill = (el, items, label, selected) => {{
-   el.innerHTML = '<option value="">' + label + '</option>';
-   items.forEach(item => {{ const o=document.createElement("option"); o.value=item.name; o.textContent=item.name; o.dataset.id=item.id || item.name; el.appendChild(o); }});
+ const saved = {division: "", district: "", upazila: "", union: ""};
+ const fill = (el, items, label, selected) => {
+   el.innerHTML = '<option value="">'+label+'</option>';
+   items.forEach(item => { const o=document.createElement("option"); o.value=item.id; o.textContent=item.bn_name || item.name; o.dataset.name=item.bn_name || item.name; el.appendChild(o); });
    el.disabled=false; if(selected) el.value=selected;
- }};
- const reset=(el,label)=>{{el.innerHTML='<option value="">'+label+'</option>';el.disabled=true;}};
- try {{
-   const r=await fetch(base+"/divisions"); if(!r.ok) throw Error();
-   const j=await r.json(); const ds=j.data || j;
-   fill(division,ds,"বিভাগ নির্বাচন করুন",{json.dumps(farmer["division"] or "")});
-   async function load(url,el,label,selected){{const x=await fetch(base+url);if(!x.ok)throw Error();const z=await x.json();fill(el,z.data||z,label,selected);}}
-   division.addEventListener("change",async()=>{{reset(district,"জেলা নির্বাচন করুন");reset(upazila,"উপজেলা নির্বাচন করুন");reset(union,"ইউনিয়ন/পৌরসভা নির্বাচন করুন");const v=division.value;if(!v)return;try{{await load("/districts/"+encodeURIComponent(v),district,"জেলা নির্বাচন করুন");}}catch(e){{status.textContent="জেলার তালিকা পাওয়া যায়নি।";}}}});
-   district.addEventListener("change",async()=>{{reset(upazila,"উপজেলা নির্বাচন করুন");reset(union,"ইউনিয়ন/পৌরসভা নির্বাচন করুন");if(!district.value)return;try{{await load("/upazilas/"+encodeURIComponent(district.value),upazila,"উপজেলা নির্বাচন করুন");}}catch(e){{status.textContent="উপজেলার তালিকা পাওয়া যায়নি।";}}}});
-   upazila.addEventListener("change",async()=>{{reset(union,"ইউনিয়ন/পৌরসভা নির্বাচন করুন");if(!upazila.value)return;try{{await load("/unions/"+encodeURIComponent(upazila.value),union,"ইউনিয়ন/পৌরসভা নির্বাচন করুন");}}catch(e){{status.textContent="ইউনিয়নের তালিকা পাওয়া যায়নি।";}}}});
-   status.textContent="তালিকা প্রস্তুত। বিভাগ থেকে নির্বাচন শুরু করুন।";
- }} catch(e) {{ status.textContent="ঠিকানার তালিকা লোড হয়নি। ইন্টারনেট সংযোগ পরীক্ষা করে পৃষ্ঠা রিফ্রেশ করুন।"; }}
-}})();
+ };
+ const reset=(el,label)=>{el.innerHTML='<option value="">'+label+'</option>';el.disabled=true;};
+ try {
+   const [dv,dt,uz,un]=await Promise.all(["divisions","districts","upazilas","unions"].map(async f=>{const r=await fetch(base+"/"+f+".json");if(!r.ok)throw Error(f);return r.json();}));
+   const byId=(arr,id)=>arr.find(x=>String(x.id)===String(id));
+   fill(division,dv,"বিভাগ নির্বাচন করুন", "");
+   division.addEventListener("change",()=>{
+     reset(district,"জেলা নির্বাচন করুন");reset(upazila,"উপজেলা নির্বাচন করুন");reset(union,"ইউনিয়ন/পৌরসভা নির্বাচন করুন");
+     const rows=dt.filter(x=>String(x.division_id)===String(division.value));
+     fill(district,rows,"জেলা নির্বাচন করুন","");
+   });
+   district.addEventListener("change",()=>{
+     reset(upazila,"উপজেলা নির্বাচন করুন");reset(union,"ইউনিয়ন/পৌরসভা নির্বাচন করুন");
+     const rows=uz.filter(x=>String(x.district_id)===String(district.value));
+     fill(upazila,rows,"উপজেলা নির্বাচন করুন","");
+   });
+   upazila.addEventListener("change",()=>{
+     reset(union,"ইউনিয়ন/পৌরসভা নির্বাচন করুন");
+     const rows=un.filter(x=>String(x.upazila_id)===String(upazila.value));
+     fill(union,rows,"ইউনিয়ন/পৌরসভা নির্বাচন করুন","");
+   });
+   [division,district,upazila,union].forEach(el=>el.addEventListener("change",()=>{
+     const selected=el.options[el.selectedIndex]; if(selected && selected.dataset.name) el.dataset.selectedName=selected.dataset.name;
+   }));
+   // Submit readable Bangla names rather than internal IDs.
+   [division,district,upazila,union].forEach(el=>el.addEventListener("change",()=>{
+     const opt=el.options[el.selectedIndex]; if(opt && opt.dataset.name) opt.value=opt.dataset.name;
+   }));
+   status.textContent="বাংলাদেশের ঠিকানার তালিকা প্রস্তুত। বিভাগ নির্বাচন করুন।";
+ } catch(e) {
+   status.textContent="ঠিকানার তালিকা লোড হয়নি। পৃষ্ঠা রিফ্রেশ করুন বা কিছুক্ষণ পর চেষ্টা করুন।";
+ }
+})();
 </script></main>"""
     return page("কৃষক প্রোফাইল", body)
 
