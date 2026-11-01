@@ -723,8 +723,8 @@ def farmer_login():
           const result = await confirmation.confirm(document.getElementById("code").value.trim());
           const idToken = await result.user.getIdToken(true);
           const response = await fetch("/api/farmer/session", {
-            method: "POST", headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({idToken})
+            method: "POST", headers: {{"Content-Type": "application/json"}},
+            body: JSON.stringify({{idToken}})
           });
           const data = await response.json();
           if (!response.ok) throw new Error(data.detail || "সার্ভার লগইন ব্যর্থ হয়েছে।");
@@ -734,7 +734,7 @@ def farmer_login():
       onAuthStateChanged(auth, user => {{
         document.getElementById("logout").hidden = !user;
         if (user) status.textContent = "লগইন করা নম্বর: " + user.phoneNumber;
-        else fetch("/api/farmer/logout", {method: "POST"}).catch(() => {});
+        else fetch("/api/farmer/logout", {{method: "POST"}}).catch(() => {});
       }});
       document.getElementById("logout").addEventListener("click", async () => {{
         await fetch("/api/farmer/logout", {method: "POST"});
