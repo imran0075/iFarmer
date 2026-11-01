@@ -59,7 +59,7 @@ def init_db():
         farmer_columns = [row["name"] for row in c.execute("SELECT column_name AS name FROM information_schema.columns WHERE table_name='farmers'").fetchall()] if DATABASE_URL else [row["name"] for row in c.execute("PRAGMA table_info(farmers)").fetchall()]
         for col in ["full_name", "division", "district", "upazila", "union_name", "village", "home_address"]:
             if col not in farmer_columns:
-                c.execute("ALTER TABLE farmers ADD COLUMN " + col + " TEXT DEFAULT ')")
+                c.execute("ALTER TABLE farmers ADD COLUMN " + col + " TEXT DEFAULT ''")
         c.execute(f"""CREATE TABLE IF NOT EXISTS orders(
             id {primary_key}, name TEXT NOT NULL, phone TEXT NOT NULL,
             address TEXT NOT NULL, product TEXT NOT NULL, quantity TEXT NOT NULL,
