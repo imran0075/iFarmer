@@ -578,11 +578,69 @@ def dashboard(request: Request):
     body = f"""<main class="admin-main"><div class="admin-head"><div><div class="eyebrow">OWNER CONTROL</div><h1>সুপার অ্যাডমিন ড্যাশবোর্ড</h1><p>লগইন: {esc(request.session.get('admin'))}</p></div><form method="post" action="/admin/logout"><button class="btn light">লগআউট</button></form></div>
 <div class="stats admin-stats"><div><b>{len(orders)}</b><span>সাম্প্রতিক অর্ডার</span></div><div><b>{len(partners)}</b><span>পার্টনার আবেদন</span></div><div><b>{len(sites)}</b><span>পার্টনার সাইট</span></div><div><b>{sum(1 for r in partners if r['status']=='অপেক্ষমাণ')}</b><span>অনুমোদনের অপেক্ষায়</span></div></div>
 <section class="admin-section"><h2>কৃষক তথ্য ব্যবস্থাপনা</h2><p>প্রথমে নিবন্ধিত কৃষকদের সব তথ্য অনলাইনে দেখুন। প্রয়োজন হলে পরে Excel ডাউনলোড করুন।</p><a class="btn primary" href="/admin/farmers">সকল কৃষকের তথ্য দেখুন</a> <a class="btn light" href="/admin/export/farmers.xlsx">Excel ডাউনলোড</a></section>
-<section class="admin-section"><h2>অর্ডার ব্যবস্থাপনা</h2><div class="table-wrap"><table><thead><tr><th>নম্বর / সময়</th><th>ক্রেতা</th><th>অর্ডার</th><th>স্ট্যাটাস</th></tr></thead><tbody>{''.join(order_row(r) for r in orders) or '<tr><td colspan="4">এখনো কোনো অর্ডার নেই।</td></tr>'}</tbody></table></div></section>
+<section class="admin-section"><h2>অর্ডার ব্যবস্থাপনা</h2><p>সব অর্ডার আলাদা পৃষ্ঠায় খুঁজুন, স্ট্যাটাস অনুযায়ী ফিল্টার করুন এবং আপডেট করুন।</p><a class="btn primary" href="/admin/orders">সব অর্ডার পরিচালনা করুন</a><div class="table-wrap"><table><thead><tr><th>নম্বর / সময়</th><th>ক্রেতা</th><th>অর্ডার</th><th>স্ট্যাটাস</th></tr></thead><tbody>{''.join(order_row(r) for r in orders) or '<tr><td colspan="4">এখনো কোনো অর্ডার নেই।</td></tr>'}</tbody></table></div></section>
 <section class="admin-section"><h2>পার্টনার সাইট অনুমোদন</h2><div class="table-wrap"><table><thead><tr><th>আবেদন</th><th>দোকান/যোগাযোগ</th><th>সাবডোমেইন/এলাকা</th><th>সিদ্ধান্ত</th></tr></thead><tbody>{''.join(partner_row(r) for r in partners) or '<tr><td colspan="4">এখনো কোনো আবেদন নেই।</td></tr>'}</tbody></table></div><p class="fine">স্ট্যাটাস অনুমোদিত করলেও DNS বা সাবডোমেইন স্বয়ংক্রিয়ভাবে তৈরি হয় না।</p></section>
 <section class="admin-section"><h2>পার্টনার সাইট ব্যবস্থাপনা</h2><div class="table-wrap"><table><thead><tr><th>সাইট আইডি</th><th>দোকান/মালিক</th><th>সাবডোমেইন/এলাকা</th><th>অবস্থা</th></tr></thead><tbody>{''.join(site_row(r) for r in sites) or '<tr><td colspan="4">এখনো কোনো অনুমোদিত পার্টনার সাইট নেই। কোনো আবেদনকে “অনুমোদিত” করলে এখানে যুক্ত হবে।</td></tr>'}</tbody></table></div><p class="fine">এটি অনুমোদিত সাইটের তালিকা ও অবস্থা পরিচালনা করে। বাস্তবে সাবডোমেইন চালু করতে নিজস্ব ডোমেইন, DNS ও হোস্টিং কনফিগারেশন লাগবে।</p></section>
 <section class="admin-section"><h2>সাম্প্রতিক কার্যকলাপ</h2><div class="table-wrap"><table><thead><tr><th>সময়</th><th>ব্যবহারকারী</th><th>কাজ</th><th>বিষয়</th></tr></thead><tbody>{''.join(f"<tr><td>{esc(r['created_at'])}</td><td>{esc(r['actor'])}</td><td>{esc(r['action'])}</td><td>{esc(r['item_type'])} {esc(r['item_id'])}</td></tr>" for r in audits) or '<tr><td colspan="4">কোনো লগ নেই।</td></tr>'}</tbody></table></div></section></main>"""
     return page("সুপার অ্যাডমিন", body)
+
+@app.get("/admin/orders", response_class=HTMLResponse)
+def admin_orders(request: Request):
+    if not require_admin(request):
+        return RedirectResponse("/admin", status_code=303)
+    allowed = ["নতুন", "ফোনে যোগাযোগ করতে হবে", "নিশ্চিত", "প্রসেসিং", "ডেলিভারির পথে", "সম্পন্ন", "বাতিল", "বাতিলের অনুরোধ"]
+    status = clean(request.query_params.get("status", ""), 50)
+    search = clean(request.query_params.get("q", ""), 100)
+    if status not in allowed:
+        status = ""
+    try:
+        page_no = max(1, int(request.query_params.get("page", "1")))
+    except ValueError:
+        page_no = 1
+    per_page = 30
+    where, params = [], []
+    if status:
+        where.append("status=?")
+        params.append(status)
+    if search:
+        where.append("(CAST(id AS TEXT) LIKE ? OR name LIKE ? OR phone LIKE ? OR product LIKE ?)")
+        term = "%" + search + "%"
+        params.extend([term, term, term, term])
+    clause = (" WHERE " + " AND ".join(where)) if where else ""
+    with db() as c:
+        total = c.execute(sql_placeholders("SELECT COUNT(*) AS n FROM orders" + clause), tuple(params)).fetchone()["n"]
+        rows = c.execute(sql_placeholders("SELECT * FROM orders" + clause + " ORDER BY id DESC LIMIT ? OFFSET ?"),
+                         tuple(params + [per_page, (page_no-1)*per_page])).fetchall()
+        counts = {st: c.execute(sql_placeholders("SELECT COUNT(*) AS n FROM orders WHERE status=?"), (st,)).fetchone()["n"] for st in allowed}
+    def order_card(r):
+        return f"""<article class="card admin-section">
+<div class="admin-head"><div><h3>অর্ডার IF-{r['id']:05d}</h3><small>{esc(r['created_at'])}</small></div><b>{esc(r['status'])}</b></div>
+<p><b>ক্রেতা:</b> {esc(r['name'])} · {esc(r['phone'])}</p>
+<p><b>ঠিকানা:</b> {esc(r['address'])}</p>
+<p><b>পণ্য:</b> {esc(r['product'])} · <b>পরিমাণ:</b> {esc(r['quantity'])}</p>
+<p><b>পেমেন্ট:</b> {esc(r['payment'])} · <b>নোট:</b> {esc(r['notes'])}</p>
+<form method="post" action="/admin/order-status" class="actions">
+<input type="hidden" name="order_id" value="{r['id']}">
+<select name="status" aria-label="অর্ডারের নতুন অবস্থা">{''.join(f'<option {"selected" if r["status"]==st else ""}>{st}</option>' for st in allowed if st != "বাতিলের অনুরোধ")}</select>
+<button class="btn primary" type="submit">স্ট্যাটাস সংরক্ষণ</button>
+</form></article>"""
+    total_pages = max(1, (total + per_page - 1)//per_page)
+    def page_link(n):
+        from urllib.parse import urlencode
+        return "/admin/orders?" + urlencode({"page": n, "status": status, "q": search})
+    prev_link = f'<a class="btn light" href="{page_link(page_no-1)}">আগের পৃষ্ঠা</a>' if page_no > 1 else ""
+    next_link = f'<a class="btn light" href="{page_link(page_no+1)}">পরের পৃষ্ঠা</a>' if page_no < total_pages else ""
+    status_options = '<option value="">সব স্ট্যাটাস</option>' + ''.join(f'<option value="{esc(st)}" {"selected" if status==st else ""}>{esc(st)} ({counts[st]})</option>' for st in allowed)
+    body = f"""<main class="admin-main">
+<div class="admin-head"><div><div class="eyebrow">OWNER CONTROL</div><h1>অর্ডার ব্যবস্থাপনা</h1><p>মোট পাওয়া অর্ডার: <b>{total}</b> · পৃষ্ঠা {page_no}/{total_pages}</p></div><a class="btn light" href="/admin/dashboard">ড্যাশবোর্ডে ফিরুন</a></div>
+<section class="admin-section"><form method="get" action="/admin/orders" class="form card">
+<label>অর্ডার খুঁজুন<input name="q" value="{esc(search)}" placeholder="অর্ডার নম্বর, নাম, মোবাইল বা পণ্য"></label>
+<label>স্ট্যাটাস<select name="status">{status_options}</select></label>
+<button class="btn primary" type="submit">খুঁজুন / ফিল্টার</button> <a class="btn light" href="/admin/orders">সব অর্ডার</a>
+</form></section>
+{''.join(order_card(r) for r in rows) or '<section class="card"><p>এই শর্তে কোনো অর্ডার পাওয়া যায়নি।</p></section>'}
+<div class="actions">{prev_link}{next_link}</div></main>"""
+    return page("অর্ডার ব্যবস্থাপনা", body)
 
 @app.get("/admin/farmers", response_class=HTMLResponse)
 def admin_farmers(request: Request):
