@@ -802,7 +802,7 @@ def farmer_profile(request: Request):
  const status = document.getElementById("geo-status");
  const fill = (el, items, label) => {{
    el.innerHTML = '<option value="">'+label+'</option>';
-   items.forEach(item => {{ const o=document.createElement("option"); o.value=item.bn_name || item.name; o.textContent=item.bn_name || item.name; el.appendChild(o); }});
+   items.forEach(item => {{ const o=document.createElement("option"); o.value=item.id; o.textContent=item.bn_name || item.name; el.appendChild(o); }});
    el.disabled=false;
  }};
  const reset=(el,label)=>{{el.innerHTML='<option value="">'+label+'</option>';el.disabled=true;}};
@@ -821,14 +821,6 @@ def farmer_profile(request: Request):
      reset(union,"ইউনিয়ন/পৌরসভা নির্বাচন করুন");
      fill(union,un.filter(x=>String(x.upazila_id)===String(upazila.value)),"ইউনিয়ন/পৌরসভা নির্বাচন করুন");
    }});
-   const syncAddress=()=>{{
-     [["division_value",division],["district_value",district],["upazila_value",upazila],["union_value",union]].forEach(([id,el])=>{{
-       const opt=el.options[el.selectedIndex];
-       document.getElementById(id).value=(opt && opt.dataset.name) ? opt.dataset.name : "";
-     }});
-   }};
-   [division,district,upazila,union].forEach(el=>el.addEventListener("change",syncAddress));
-   division.form.addEventListener("submit",syncAddress);
    status.textContent="বাংলাদেশের ঠিকানার তালিকা প্রস্তুত। বিভাগ নির্বাচন করুন।";
  }} catch(e) {{
    status.textContent="ঠিকানার তালিকা লোড হয়নি। পৃষ্ঠা রিফ্রেশ করুন বা কিছুক্ষণ পর চেষ্টা করুন।";
