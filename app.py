@@ -732,7 +732,8 @@ def farmer_login():
           });
           const data = await response.json();
           if (!response.ok) throw new Error(data.detail || "সার্ভার লগইন ব্যর্থ হয়েছে।");
-          status.textContent = "লগইন সফল! " + data.phone + " — সার্ভারে যাচাই সম্পন্ন।";
+          status.textContent = "লগইন সফল! প্রোফাইল ফর্মে নেওয়া হচ্ছে…";
+          window.location.href = "/farmer/profile";
         } catch (e) { status.textContent = "OTP যাচাই হয়নি: " + e.message; }
       });
       onAuthStateChanged(auth, user => {
