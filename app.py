@@ -150,9 +150,10 @@ def home(request: Request):
             ["division", "district", "upazila", "union_name", "village", "home_address"] if farmer[k])
     with db() as c:
         products = c.execute(sql_placeholders("""SELECT pp.id,pp.name,pp.price,pp.unit,pp.description,
-            pr.shop_name,pr.area,(pp.image_data IS NOT NULL) AS has_image FROM partner_products pp
-            JOIN partner_requests pr ON pr.id=pp.partner_request_id
-            WHERE pp.status='সক্রিয়' AND pr.status='অনুমোদিত'
+            COALESCE(pr.shop_name,'iFarmer') AS shop_name,COALESCE(pr.area,'সারা বাংলাদেশ') AS area,
+            (pp.image_data IS NOT NULL) AS has_image FROM partner_products pp
+            LEFT JOIN partner_requests pr ON pr.id=pp.partner_request_id
+            WHERE pp.status='সক্রিয়' AND (pp.partner_request_id=0 OR pr.status='অনুমোদিত')
             ORDER BY pp.id DESC LIMIT 60""")).fetchall()
     product_cards = ''.join(
         f'<article class="card">{f"<img class=\'product-photo\' src=\'/partner/product-image/{p[chr(105)+chr(100)]}\' alt=\'{esc(p[chr(110)+chr(97)+chr(109)+chr(101)])}\' loading=\'lazy\'>" if p["has_image"] else "<div class=\'card-icon\'>🛒</div>"}<h3>{esc(p["name"])}</h3>'
@@ -591,15 +592,13 @@ def admin_products(request: Request):
         return RedirectResponse("/admin", status_code=303)
     with db() as c:
         partners = c.execute("SELECT id,shop_name,subdomain FROM partner_requests WHERE status='অনুমোদিত' ORDER BY shop_name").fetchall()
-        products = c.execute("""SELECT pp.*, pr.shop_name FROM partner_products pp
-            JOIN partner_requests pr ON pr.id=pp.partner_request_id ORDER BY pp.id DESC""").fetchall()
-    partner_options = ''.join(f'<option value="{p["id"]}">{esc(p["shop_name"])} ({esc(p["subdomain"])})</option>' for p in partners)
+        products = c.execute("""SELECT pp.*, COALESCE(pr.shop_name,'iFarmer') AS shop_name FROM partner_products pp
+            LEFT JOIN partner_requests pr ON pr.id=pp.partner_request_id ORDER BY pp.id DESC""").fetchall()
     rows = ''.join(f"""<tr><td>{p['id']}</td><td><b>{esc(p['name'])}</b><br><small>{esc(p['description'])}</small></td><td>{esc(p['shop_name'])}</td><td>{esc(p['price'])} / {esc(p['unit'])}</td><td>{esc(p['status'])}</td></tr>""" for p in products)
     body=f"""<main class="admin-main"><div class="admin-head"><div><div class="eyebrow">OWNER CONTROL</div><h1>পণ্য ব্যবস্থাপনা</h1><p>পণ্য যোগ করুন ও তালিকাভুক্ত পণ্য দেখুন</p></div><a class="btn light" href="/admin/dashboard">ড্যাশবোর্ডে ফিরুন</a></div>
 <section class="admin-section"><h2>নতুন পণ্য যোগ করুন</h2>
 <form class="form card" method="post" action="/admin/product" enctype="multipart/form-data">
-<div class="form-grid"><label>পার্টনার দোকান<select name="partner_id" required><option value="">দোকান নির্বাচন করুন</option>{partner_options}</select></label>
-<label>পণ্যের নাম<input name="name" required maxlength="140"></label>
+<div class="form-grid"><label>পণ্যের নাম<input name="name" required maxlength="140"></label>
 <label>দাম<input name="price" required maxlength="30" placeholder="যেমন: ৫০"></label>
 <label>একক<input name="unit" required maxlength="40" placeholder="যেমন: কেজি, লিটার, প্যাকেট"></label>
 <label class="wide">পণ্যের ছবি (JPG, PNG বা WebP; সর্বোচ্চ ৪ MB)<input type="file" name="image" accept="image/jpeg,image/png,image/webp"></label>
@@ -610,7 +609,7 @@ def admin_products(request: Request):
 
 
 @app.post("/admin/product")
-async def admin_add_product(request: Request, partner_id: int=Form(...), name: str=Form(...),
+async def admin_add_product(request: Request, name: str=Form(...),
         price: str=Form(...), unit: str=Form(...), description: str=Form(""),
         image: UploadFile | None=File(default=None)):
     if not require_admin(request):
@@ -626,14 +625,11 @@ async def admin_add_product(request: Request, partner_id: int=Form(...), name: s
         if len(image_data) > 4 * 1024 * 1024:
             raise HTTPException(400, "ছবির সাইজ ৪ MB-এর কম হতে হবে।")
     with db() as c:
-        partner = c.execute(sql_placeholders("SELECT status FROM partner_requests WHERE id=?"), (partner_id,)).fetchone()
-        if not partner or partner["status"] != "অনুমোদিত":
-            raise HTTPException(400, "অনুমোদিত পার্টনার দোকান নির্বাচন করুন।")
         c.execute(sql_placeholders("""INSERT INTO partner_products
             (partner_request_id,name,price,unit,description,created_at,image_data)
-            VALUES(?,?,?,?,?,?,?)"""),
-            (partner_id, values[0], values[1], values[2], values[3], now(), image_data))
-    log_action(request.session.get("admin", "admin"), "product_created", "partner_product", partner_id)
+            VALUES(0,?,?,?,?,?,?)"""),
+            (values[0], values[1], values[2], values[3], now(), image_data))
+    log_action(request.session.get("admin", "admin"), "product_created", "partner_product", 0)
     return RedirectResponse("/admin/products", status_code=303)
 
 
