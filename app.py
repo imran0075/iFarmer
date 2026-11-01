@@ -57,7 +57,7 @@ def init_db():
             firebase_uid TEXT PRIMARY KEY, phone TEXT NOT NULL UNIQUE,
             created_at TEXT NOT NULL, last_login_at TEXT NOT NULL)""")
         farmer_columns = [row["name"] for row in c.execute("SELECT column_name AS name FROM information_schema.columns WHERE table_name='farmers'").fetchall()] if DATABASE_URL else [row["name"] for row in c.execute("PRAGMA table_info(farmers)").fetchall()]
-        for col in ["full_name", "division", "district", "upazila", "union_name", "village", "home_address", "nid_number", "birth_registration_number"]:
+        for col in ["full_name", "father_name", "division", "district", "upazila", "union_name", "village", "home_address", "nid_number", "birth_registration_number"]:
             if col not in farmer_columns:
                 c.execute("ALTER TABLE farmers ADD COLUMN " + col + " TEXT DEFAULT ''")
         c.execute(f"""CREATE TABLE IF NOT EXISTS orders(
@@ -782,6 +782,7 @@ def farmer_profile(request: Request):
 <p>প্রথমে বিভাগ, এরপর জেলা, উপজেলা ও ইউনিয়ন/পৌরসভা নির্বাচন করুন। NID ও জন্মনিবন্ধন নম্বর দেওয়া ঐচ্ছিক।</p>
 <form class="form card" method="post" action="/farmer/profile">
 <label>কৃষকের পূর্ণ নাম<input name="full_name" required value="{esc(farmer['full_name'])}"></label>
+<label>পিতার নাম *<input name="father_name" required value="{esc(farmer['father_name'])}" placeholder="পিতার পূর্ণ নাম লিখুন"></label>
 <label>যাচাইকৃত মোবাইল নম্বর<input value="{esc(farmer['phone'])}" readonly></label>
 <label>বিভাগ<select id="division" name="division" required><option value="">বিভাগ নির্বাচন করুন</option></select></label>
 <label>জেলা<select id="district" name="district" required disabled><option value="">আগে বিভাগ নির্বাচন করুন</option></select></label>
@@ -794,46 +795,46 @@ def farmer_profile(request: Request):
 <p id="geo-status" class="fine" role="status">ঠিকানার তালিকা লোড হচ্ছে…</p>
 <button class="btn primary" type="submit">প্রোফাইল সংরক্ষণ</button></form>
 <script>
-(async function () {
+(async function () {{
  const base = "https://bdapis.com/api/v1.2";
  const division = document.getElementById("division"), district = document.getElementById("district");
  const upazila = document.getElementById("upazila"), union = document.getElementById("union_name");
  const status = document.getElementById("geo-status");
- const fill = (el, items, label, selected) => {
+ const fill = (el, items, label, selected) => {{
    el.innerHTML = '<option value="">' + label + '</option>';
-   items.forEach(item => { const o=document.createElement("option"); o.value=item.name; o.textContent=item.name; o.dataset.id=item.id || item.name; el.appendChild(o); });
+   items.forEach(item => {{ const o=document.createElement("option"); o.value=item.name; o.textContent=item.name; o.dataset.id=item.id || item.name; el.appendChild(o); }});
    el.disabled=false; if(selected) el.value=selected;
- };
- const reset=(el,label)=>{el.innerHTML='<option value="">'+label+'</option>';el.disabled=true;};
- try {
+ }};
+ const reset=(el,label)=>{{el.innerHTML='<option value="">'+label+'</option>';el.disabled=true;}};
+ try {{
    const r=await fetch(base+"/divisions"); if(!r.ok) throw Error();
    const j=await r.json(); const ds=j.data || j;
    fill(division,ds,"বিভাগ নির্বাচন করুন",{json.dumps(farmer["division"] or "")});
-   async function load(url,el,label,selected){const x=await fetch(base+url);if(!x.ok)throw Error();const z=await x.json();fill(el,z.data||z,label,selected);}
-   division.addEventListener("change",async()=>{reset(district,"জেলা নির্বাচন করুন");reset(upazila,"উপজেলা নির্বাচন করুন");reset(union,"ইউনিয়ন/পৌরসভা নির্বাচন করুন");const v=division.value;if(!v)return;try{await load("/districts/"+encodeURIComponent(v),district,"জেলা নির্বাচন করুন");}catch(e){status.textContent="জেলার তালিকা পাওয়া যায়নি।";}});
-   district.addEventListener("change",async()=>{reset(upazila,"উপজেলা নির্বাচন করুন");reset(union,"ইউনিয়ন/পৌরসভা নির্বাচন করুন");if(!district.value)return;try{await load("/ upazilas/"+encodeURIComponent(district.value),upazila,"উপজেলা নির্বাচন করুন");}catch(e){status.textContent="উপজেলার তালিকা পাওয়া যায়নি।";}});
-   upazila.addEventListener("change",async()=>{reset(union,"ইউনিয়ন/পৌরসভা নির্বাচন করুন");if(!upazila.value)return;try{await load("/unions/"+encodeURIComponent(upazila.value),union,"ইউনিয়ন/পৌরসভা নির্বাচন করুন");}catch(e){status.textContent="ইউনিয়নের তালিকা পাওয়া যায়নি।";}});
+   async function load(url,el,label,selected){{const x=await fetch(base+url);if(!x.ok)throw Error();const z=await x.json();fill(el,z.data||z,label,selected);}}
+   division.addEventListener("change",async()=>{{reset(district,"জেলা নির্বাচন করুন");reset(upazila,"উপজেলা নির্বাচন করুন");reset(union,"ইউনিয়ন/পৌরসভা নির্বাচন করুন");const v=division.value;if(!v)return;try{{await load("/districts/"+encodeURIComponent(v),district,"জেলা নির্বাচন করুন");}}catch(e){{status.textContent="জেলার তালিকা পাওয়া যায়নি।";}}}});
+   district.addEventListener("change",async()=>{{reset(upazila,"উপজেলা নির্বাচন করুন");reset(union,"ইউনিয়ন/পৌরসভা নির্বাচন করুন");if(!district.value)return;try{{await load("/upazilas/"+encodeURIComponent(district.value),upazila,"উপজেলা নির্বাচন করুন");}}catch(e){{status.textContent="উপজেলার তালিকা পাওয়া যায়নি।";}}}});
+   upazila.addEventListener("change",async()=>{{reset(union,"ইউনিয়ন/পৌরসভা নির্বাচন করুন");if(!upazila.value)return;try{{await load("/unions/"+encodeURIComponent(upazila.value),union,"ইউনিয়ন/পৌরসভা নির্বাচন করুন");}}catch(e){{status.textContent="ইউনিয়নের তালিকা পাওয়া যায়নি।";}}}});
    status.textContent="তালিকা প্রস্তুত। বিভাগ থেকে নির্বাচন শুরু করুন।";
- } catch(e) { status.textContent="ঠিকানার তালিকা লোড হয়নি। ইন্টারনেট সংযোগ পরীক্ষা করে পৃষ্ঠা রিফ্রেশ করুন।"; }
-})();
+ }} catch(e) {{ status.textContent="ঠিকানার তালিকা লোড হয়নি। ইন্টারনেট সংযোগ পরীক্ষা করে পৃষ্ঠা রিফ্রেশ করুন।"; }}
+}})();
 </script></main>"""
     return page("কৃষক প্রোফাইল", body)
 
 @app.post("/farmer/profile")
 def save_farmer_profile(request: Request, full_name: str=Form(...), division: str=Form(...),
-                        district: str=Form(...), upazila: str=Form(...), union_name: str=Form(...),
+                        father_name: str=Form(...), district: str=Form(...), upazila: str=Form(...), union_name: str=Form(...),
                         village: str=Form(...), home_address: str=Form(...),
                         nid_number: str=Form(""), birth_registration_number: str=Form("")):
     farmer = logged_farmer(request)
     if not farmer:
         return RedirectResponse("/login", status_code=303)
-    values = [clean(full_name,100), clean(division,100), clean(district,100),
+    values = [clean(full_name,100), clean(father_name,100), clean(division,100), clean(district,100),
               clean(upazila,100), clean(union_name,120), clean(village,150), clean(home_address,500),
               clean(nid_number,17), clean(birth_registration_number,17)]
     if not all(values):
         raise HTTPException(400, "সব তথ্য পূরণ করুন।")
     with db() as c:
-        c.execute(sql_placeholders("UPDATE farmers SET full_name=?,division=?,district=?,upazila=?,union_name=?,village=?,home_address=?,nid_number=?,birth_registration_number=? WHERE firebase_uid=?"), (*values, request.session["farmer_uid"]))
+        c.execute(sql_placeholders("UPDATE farmers SET full_name=?,father_name=?,division=?,district=?,upazila=?,union_name=?,village=?,home_address=?,nid_number=?,birth_registration_number=? WHERE firebase_uid=?"), (*values, request.session["farmer_uid"]))
     return RedirectResponse("/farmer/dashboard", status_code=303)
 
 @app.get("/farmer/dashboard", response_class=HTMLResponse)
@@ -841,7 +842,7 @@ def farmer_dashboard(request: Request):
     farmer = logged_farmer(request)
     if not farmer:
         return RedirectResponse("/login", status_code=303)
-    if not all(farmer[k] for k in ["full_name","division","district","upazila","union_name","village","home_address"]):
+    if not all(farmer[k] for k in ["full_name","father_name","division","district","upazila","union_name","village","home_address"]):
         return RedirectResponse("/farmer/profile", status_code=303)
     body = f"""<main class="narrow section"><h1>স্বাগতম, {esc(farmer['full_name'])}</h1><section class="card">
 <p><b>মোবাইল:</b> {esc(farmer['phone'])}</p><p><b>বিভাগ:</b> {esc(farmer['division'])}</p>
