@@ -206,20 +206,20 @@ def home(request: Request):
 <p class="fine">এটি অর্ডারের অনুরোধ; ফোনে মূল্য, পণ্য, প্রাপ্যতা ও ডেলিভারি নিশ্চিত হওয়ার পর অর্ডার চূড়ান্ত হবে।</p>
 </form></section>
 <script>
-function selectOrderProduct(productId) {
+function selectOrderProduct(productId) {{
   const product = document.getElementById("order-product");
   product.value = String(productId);
   const trigger = document.getElementById("order-details-trigger");
   trigger.hidden = false;
-  trigger.scrollIntoView({behavior: "smooth", block: "center"});
-}
-function showOrderForm() {
+  trigger.scrollIntoView({{behavior: "smooth", block: "center"}});
+}}
+function showOrderForm() {{
   const trigger = document.getElementById("order-details-trigger");
   const form = document.getElementById("order-form");
   trigger.hidden = true;
   form.hidden = false;
-  form.scrollIntoView({behavior: "smooth", block: "start"});
-}
+  form.scrollIntoView({{behavior: "smooth", block: "start"}});
+}}
 </script>
 <section class="partner-banner"><div><div class="eyebrow">স্থানীয় ব্যবসার জন্য</div><h2>iFarmer পার্টনার নেটওয়ার্কে যোগ দিন</h2><p>দোকানের তথ্য জমা দিন। প্রতিটি পার্টনার অনুরোধ মালিকের অনুমোদনের জন্য অপেক্ষা করবে।</p></div><a class="btn light" href="/partner">আবেদন করুন</a></section>
 </main>"""
