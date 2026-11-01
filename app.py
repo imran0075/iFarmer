@@ -1,5 +1,7 @@
 import os, sqlite3, secrets, hmac, hashlib, re
 import json
+from io import BytesIO
+from openpyxl import Workbook
 import firebase_admin
 from firebase_admin import credentials, auth as firebase_auth
 import psycopg
@@ -9,7 +11,7 @@ from pathlib import Path
 from urllib.parse import quote
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, Form, File, UploadFile, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, Response
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -569,11 +571,44 @@ def dashboard(request: Request):
         return f"""<tr><td>PS-{r['id']:05d}</td><td><b>{esc(r['shop_name'])}</b><br>{esc(r['owner_name'])}<br>{esc(r['phone'])}</td><td><code>{esc(r['subdomain'])}</code><br>{esc(r['area'])}</td><td>{esc(r['status'])}<br><small>{esc(r['created_at'])}</small></td></tr>"""
     body = f"""<main class="admin-main"><div class="admin-head"><div><div class="eyebrow">OWNER CONTROL</div><h1>সুপার অ্যাডমিন ড্যাশবোর্ড</h1><p>লগইন: {esc(request.session.get('admin'))}</p></div><form method="post" action="/admin/logout"><button class="btn light">লগআউট</button></form></div>
 <div class="stats admin-stats"><div><b>{len(orders)}</b><span>সাম্প্রতিক অর্ডার</span></div><div><b>{len(partners)}</b><span>পার্টনার আবেদন</span></div><div><b>{len(sites)}</b><span>পার্টনার সাইট</span></div><div><b>{sum(1 for r in partners if r['status']=='অপেক্ষমাণ')}</b><span>অনুমোদনের অপেক্ষায়</span></div></div>
+<section class="admin-section"><h2>কৃষক তথ্য সংগ্রহ</h2><p>সকল নিবন্ধিত কৃষকের প্রোফাইল ও ঠিকানা এক্সেল ফাইলে সংগ্রহ করুন।</p><a class="btn primary" href="/admin/export/farmers.xlsx">সকল কৃষকের Excel ডাউনলোড</a></section>
 <section class="admin-section"><h2>অর্ডার ব্যবস্থাপনা</h2><div class="table-wrap"><table><thead><tr><th>নম্বর / সময়</th><th>ক্রেতা</th><th>অর্ডার</th><th>স্ট্যাটাস</th></tr></thead><tbody>{''.join(order_row(r) for r in orders) or '<tr><td colspan="4">এখনো কোনো অর্ডার নেই।</td></tr>'}</tbody></table></div></section>
 <section class="admin-section"><h2>পার্টনার সাইট অনুমোদন</h2><div class="table-wrap"><table><thead><tr><th>আবেদন</th><th>দোকান/যোগাযোগ</th><th>সাবডোমেইন/এলাকা</th><th>সিদ্ধান্ত</th></tr></thead><tbody>{''.join(partner_row(r) for r in partners) or '<tr><td colspan="4">এখনো কোনো আবেদন নেই।</td></tr>'}</tbody></table></div><p class="fine">স্ট্যাটাস অনুমোদিত করলেও DNS বা সাবডোমেইন স্বয়ংক্রিয়ভাবে তৈরি হয় না।</p></section>
 <section class="admin-section"><h2>পার্টনার সাইট ব্যবস্থাপনা</h2><div class="table-wrap"><table><thead><tr><th>সাইট আইডি</th><th>দোকান/মালিক</th><th>সাবডোমেইন/এলাকা</th><th>অবস্থা</th></tr></thead><tbody>{''.join(site_row(r) for r in sites) or '<tr><td colspan="4">এখনো কোনো অনুমোদিত পার্টনার সাইট নেই। কোনো আবেদনকে “অনুমোদিত” করলে এখানে যুক্ত হবে।</td></tr>'}</tbody></table></div><p class="fine">এটি অনুমোদিত সাইটের তালিকা ও অবস্থা পরিচালনা করে। বাস্তবে সাবডোমেইন চালু করতে নিজস্ব ডোমেইন, DNS ও হোস্টিং কনফিগারেশন লাগবে।</p></section>
 <section class="admin-section"><h2>সাম্প্রতিক কার্যকলাপ</h2><div class="table-wrap"><table><thead><tr><th>সময়</th><th>ব্যবহারকারী</th><th>কাজ</th><th>বিষয়</th></tr></thead><tbody>{''.join(f"<tr><td>{esc(r['created_at'])}</td><td>{esc(r['actor'])}</td><td>{esc(r['action'])}</td><td>{esc(r['item_type'])} {esc(r['item_id'])}</td></tr>" for r in audits) or '<tr><td colspan="4">কোনো লগ নেই।</td></tr>'}</tbody></table></div></section></main>"""
     return page("সুপার অ্যাডমিন", body)
+
+@app.get("/admin/export/farmers.xlsx")
+def export_farmers_excel(request: Request):
+    if not require_admin(request):
+        raise HTTPException(401, "সুপার অ্যাডমিন লগইন প্রয়োজন।")
+    headers = ["মোবাইল", "পূর্ণ নাম", "পিতার নাম", "NID নম্বর", "জন্মনিবন্ধন নম্বর",
+               "বিভাগ", "জেলা", "উপজেলা", "ইউনিয়ন/পৌরসভা", "গ্রাম", "পূর্ণ ঠিকানা",
+               "নিবন্ধনের সময়", "সর্বশেষ লগইন"]
+    with db() as c:
+        rows = c.execute("""SELECT phone,full_name,father_name,nid_number,birth_registration_number,
+            division,district,upazila,union_name,village,home_address,created_at,last_login_at
+            FROM farmers ORDER BY created_at DESC""").fetchall()
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "কৃষক তালিকা"
+    ws.append(headers)
+    for row in rows:
+        ws.append([row[key] or "" for key in ["phone","full_name","father_name","nid_number",
+            "birth_registration_number","division","district","upazila","union_name","village",
+            "home_address","created_at","last_login_at"]])
+    ws.freeze_panes = "A2"
+    ws.auto_filter.ref = ws.dimensions
+    for col in ws.columns:
+        letter = col[0].column_letter
+        ws.column_dimensions[letter].width = min(max(max(len(str(cell.value or "")) for cell in col) + 2, 14), 38)
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    log_action(request.session["admin"], "export_farmers_excel", "farmers", len(rows))
+    return StreamingResponse(output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=ifarmer_farmers.xlsx"})
 
 @app.post("/admin/order-status")
 def order_status(request: Request, order_id: int=Form(...), status: str=Form(...)):
