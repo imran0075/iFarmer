@@ -845,8 +845,8 @@ def save_farmer_profile(request: Request, full_name: str=Form(...), division: st
     values = [clean(full_name,100), clean(father_name,100), clean(division,100), clean(district,100),
               clean(upazila,100), clean(union_name,120), clean(village,150), clean(home_address,500),
               clean(nid_number,17), clean(birth_registration_number,17)]
-    if not all(values):
-        raise HTTPException(400, "সব তথ্য পূরণ করুন।")
+    if not all(values[:8]):
+        raise HTTPException(400, "নাম, পিতার নাম ও ঠিকানার বাধ্যতামূলক তথ্য পূরণ করুন।")
     with db() as c:
         c.execute(sql_placeholders("UPDATE farmers SET full_name=?,father_name=?,division=?,district=?,upazila=?,union_name=?,village=?,home_address=?,nid_number=?,birth_registration_number=? WHERE firebase_uid=?"), (*values, request.session["farmer_uid"]))
     return RedirectResponse("/farmer/dashboard", status_code=303)
