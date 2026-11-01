@@ -581,8 +581,33 @@ def dashboard(request: Request):
 <section class="admin-section"><h2>অর্ডার ব্যবস্থাপনা</h2><p>সব অর্ডার আলাদা পৃষ্ঠায় খুঁজুন, স্ট্যাটাস অনুযায়ী ফিল্টার করুন এবং আপডেট করুন।</p><a class="btn primary" href="/admin/orders">সব অর্ডার পরিচালনা করুন</a><div class="table-wrap"><table><thead><tr><th>নম্বর / সময়</th><th>ক্রেতা</th><th>অর্ডার</th><th>স্ট্যাটাস</th></tr></thead><tbody>{''.join(order_row(r) for r in orders) or '<tr><td colspan="4">এখনো কোনো অর্ডার নেই।</td></tr>'}</tbody></table></div></section>
 <section class="admin-section"><h2>পার্টনার সাইট অনুমোদন</h2><div class="table-wrap"><table><thead><tr><th>আবেদন</th><th>দোকান/যোগাযোগ</th><th>সাবডোমেইন/এলাকা</th><th>সিদ্ধান্ত</th></tr></thead><tbody>{''.join(partner_row(r) for r in partners) or '<tr><td colspan="4">এখনো কোনো আবেদন নেই।</td></tr>'}</tbody></table></div><p class="fine">স্ট্যাটাস অনুমোদিত করলেও DNS বা সাবডোমেইন স্বয়ংক্রিয়ভাবে তৈরি হয় না।</p></section>
 <section class="admin-section"><h2>পার্টনার সাইট ব্যবস্থাপনা</h2><div class="table-wrap"><table><thead><tr><th>সাইট আইডি</th><th>দোকান/মালিক</th><th>সাবডোমেইন/এলাকা</th><th>অবস্থা</th></tr></thead><tbody>{''.join(site_row(r) for r in sites) or '<tr><td colspan="4">এখনো কোনো অনুমোদিত পার্টনার সাইট নেই। কোনো আবেদনকে “অনুমোদিত” করলে এখানে যুক্ত হবে।</td></tr>'}</tbody></table></div><p class="fine">এটি অনুমোদিত সাইটের তালিকা ও অবস্থা পরিচালনা করে। বাস্তবে সাবডোমেইন চালু করতে নিজস্ব ডোমেইন, DNS ও হোস্টিং কনফিগারেশন লাগবে।</p></section>
-<section class="admin-section"><h2>সাম্প্রতিক কার্যকলাপ</h2><div class="table-wrap"><table><thead><tr><th>সময়</th><th>ব্যবহারকারী</th><th>কাজ</th><th>বিষয়</th></tr></thead><tbody>{''.join(f"<tr><td>{esc(r['created_at'])}</td><td>{esc(r['actor'])}</td><td>{esc(r['action'])}</td><td>{esc(r['item_type'])} {esc(r['item_id'])}</td></tr>" for r in audits) or '<tr><td colspan="4">কোনো লগ নেই।</td></tr>'}</tbody></table></div></section></main>"""
+<section class="admin-section"><h2>কার্যকলাপ লগ</h2><p>অ্যাডমিন ও সিস্টেমের সাম্প্রতিক কার্যকলাপ আলাদা পৃষ্ঠায় দেখুন।</p><a class="btn primary" href="/admin/activity">সকল কার্যকলাপ দেখুন</a></section></main>"""
     return page("সুপার অ্যাডমিন", body)
+
+@app.get("/admin/activity", response_class=HTMLResponse)
+def admin_activity(request: Request):
+    if not require_admin(request):
+        return RedirectResponse("/admin", status_code=303)
+    try:
+        page_no = max(1, int(request.query_params.get("page", "1")))
+    except ValueError:
+        page_no = 1
+    per_page = 50
+    with db() as c:
+        total = c.execute("SELECT COUNT(*) AS n FROM audit").fetchone()["n"]
+        rows = c.execute(sql_placeholders("SELECT * FROM audit ORDER BY id DESC LIMIT ? OFFSET ?"),
+                         (per_page, (page_no-1)*per_page)).fetchall()
+    total_pages = max(1, (total + per_page - 1)//per_page)
+    def page_link(n):
+        return f"/admin/activity?page={n}"
+    prev_link = f'<a class="btn light" href="{page_link(page_no-1)}">আগের পৃষ্ঠা</a>' if page_no > 1 else ""
+    next_link = f'<a class="btn light" href="{page_link(page_no+1)}">পরের পৃষ্ঠা</a>' if page_no < total_pages else ""
+    rows_html = ''.join(f"<tr><td>{esc(r['created_at'])}</td><td>{esc(r['actor'])}</td><td>{esc(r['action'])}</td><td>{esc(r['item_type'])} {esc(r['item_id'])}</td></tr>" for r in rows)
+    body = f"""<main class="admin-main">
+<div class="admin-head"><div><div class="eyebrow">OWNER CONTROL</div><h1>সকল কার্যকলাপ</h1><p>মোট লগ: {total} · পৃষ্ঠা {page_no}/{total_pages}</p></div><a class="btn light" href="/admin/dashboard">ড্যাশবোর্ডে ফিরুন</a></div>
+<section class="admin-section"><div class="table-wrap"><table><thead><tr><th>সময়</th><th>ব্যবহারকারী</th><th>কাজ</th><th>বিষয়</th></tr></thead><tbody>{rows_html or '<tr><td colspan="4">কোনো কার্যকলাপ লগ নেই।</td></tr>'}</tbody></table></div>
+<div class="actions">{prev_link}{next_link}</div></section></main>"""
+    return page("সকল কার্যকলাপ", body)
 
 @app.get("/admin/orders", response_class=HTMLResponse)
 def admin_orders(request: Request):
