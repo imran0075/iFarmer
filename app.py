@@ -159,7 +159,7 @@ def home(request: Request):
         f'<article class="card">{f"<img class=\'product-photo\' src=\'/partner/product-image/{p[chr(105)+chr(100)]}\' alt=\'{esc(p[chr(110)+chr(97)+chr(109)+chr(101)])}\' loading=\'lazy\'>" if p["has_image"] else "<div class=\'card-icon\'>🛒</div>"}<h3>{esc(p["name"])}</h3>'
         f'<p><b>{esc(p["price"])} টাকা / {esc(p["unit"])}</b></p>'
         f'<p>{esc(p["description"])}</p><p class="fine">বিক্রেতা: {esc(p["shop_name"])} · {esc(p["area"])}</p>'
-        f'<a class="btn primary" href="#order" onclick="document.getElementById(\'order-product\').value=\'{p["id"]}\'">এই পণ্য অর্ডার করুন</a></article>' for p in products
+        f'<button class="btn primary" type="button" onclick="selectOrderProduct({p["id"]})">পণ্য অর্ডার</button></article>' for p in products
     )
     if not product_cards:
         product_cards = '<article class="card"><div class="card-icon">🌱</div><h3>পণ্য শিগগিরই আসছে</h3><p>অনুমোদিত পার্টনাররা পণ্য প্রকাশ করলে এখানে দেখা যাবে।</p></article>'
@@ -190,8 +190,9 @@ def home(request: Request):
 </div></section>
 <section id="products" class="section"><div class="section-head"><div><div class="eyebrow">iFarmer মার্কেটপ্লেস</div><h2>পার্টনারদের পণ্য</h2></div><p>পণ্যের প্রাপ্যতা, দাম ও ব্যবহার বিক্রেতার সঙ্গে নিশ্চিত করুন।</p></div>
 <div class="cards">{product_cards}</div></section>
-<section id="order" class="section order-section"><div class="section-head"><div><div class="eyebrow">অর্ডার রিকোয়েস্ট</div><h2>আপনার অর্ডারের তথ্য দিন</h2></div><p>ফর্ম পাঠানোর পর বিক্রেতা আপনার সঙ্গে যোগাযোগ করবেন।</p></div>
-<form class="form card" method="post" action="/order">
+<section id="order" class="section order-section"><div class="section-head"><div><div class="eyebrow">অর্ডার রিকোয়েস্ট</div><h2>পণ্য অর্ডার</h2></div><p>পণ্য অর্ডার বাটনে চাপ দেওয়ার পর অর্ডারের তথ্য দিতে পারবেন।</p></div>
+<button id="order-details-trigger" class="btn primary" type="button" hidden onclick="showOrderForm()">আপনার অর্ডার তথ্য দিন</button>
+<form id="order-form" class="form card" method="post" action="/order" hidden>
 <div class="form-grid">
 <label>আপনার নাম<input name="name" required maxlength="100" value="{esc(farmer['full_name'] if farmer else '')}" placeholder="পূর্ণ নাম"></label>
 <label>মোবাইল নম্বর<input name="phone" required inputmode="tel" maxlength="30" value="{esc(farmer['phone'] if farmer else '')}" placeholder="01XXXXXXXXX"></label>
@@ -204,6 +205,22 @@ def home(request: Request):
 </div><button class="btn primary" type="submit">অর্ডারের অনুরোধ পাঠান →</button>
 <p class="fine">এটি অর্ডারের অনুরোধ; ফোনে মূল্য, পণ্য, প্রাপ্যতা ও ডেলিভারি নিশ্চিত হওয়ার পর অর্ডার চূড়ান্ত হবে।</p>
 </form></section>
+<script>
+function selectOrderProduct(productId) {
+  const product = document.getElementById("order-product");
+  product.value = String(productId);
+  const trigger = document.getElementById("order-details-trigger");
+  trigger.hidden = false;
+  trigger.scrollIntoView({behavior: "smooth", block: "center"});
+}
+function showOrderForm() {
+  const trigger = document.getElementById("order-details-trigger");
+  const form = document.getElementById("order-form");
+  trigger.hidden = true;
+  form.hidden = false;
+  form.scrollIntoView({behavior: "smooth", block: "start"});
+}
+</script>
 <section class="partner-banner"><div><div class="eyebrow">স্থানীয় ব্যবসার জন্য</div><h2>iFarmer পার্টনার নেটওয়ার্কে যোগ দিন</h2><p>দোকানের তথ্য জমা দিন। প্রতিটি পার্টনার অনুরোধ মালিকের অনুমোদনের জন্য অপেক্ষা করবে।</p></div><a class="btn light" href="/partner">আবেদন করুন</a></section>
 </main>"""
     return page("কৃষি পণ্য ও সেবা", body)
