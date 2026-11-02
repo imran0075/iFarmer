@@ -194,7 +194,7 @@ def home(request: Request):
 <div class="section-head"><div><div class="eyebrow">জ্ঞানভান্ডার ও সেবা</div><h2>আপনার প্রয়োজনীয় বিভাগ বেছে নিন</h2></div><p>কৃষি এবং মৎস্য ও প্রাণিসম্পদ বিভাগের সহায়ক তথ্য।</p></div>
 <div class="cards">
 <article class="card"><div class="card-icon">🌾</div><h3>কৃষি বিভাগ</h3><p>ফসল, আবহাওয়া ও কৃষি সহায়ক তথ্য।</p><a class="btn primary" href="/agri">কৃষি বিভাগে যান</a></article>
-<article class="card"><div class="card-icon">🐟🐄</div><h3>মৎস্য ও প্রাণিসম্পদ বিভাগ</h3><p>মাছ চাষ, গবাদিপশু পালন এবং হাঁস-মুরগি ও পোল্ট্রি পরিচর্যার তথ্য।</p><div class="actions"><a class="btn primary" href="/agri/category/fish">মৎস্য</a><a class="btn primary" href="/agri/category/livestock">প্রাণিসম্পদ</a><a class="btn light" href="/agri/category/poultry">হাঁস-মুরগি / পোল্ট্রি</a></div></article>
+<article class="card"><div class="card-icon">🐟🐄</div><h3>মৎস্য ও প্রাণিসম্পদ বিভাগ</h3><p>মাছ চাষ, গবাদিপশু পালন এবং হাঁস-মুরগি ও পোল্ট্রি পরিচর্যার তথ্য।</p><a class="btn primary" href="/agri/category/livestock-poultry">বিভাগে প্রবেশ করুন</a></article>
 </div></section>
 <section id="products" class="section"><div class="section-head"><div><div class="eyebrow">iFarmer মার্কেটপ্লেস</div><h2>পার্টনারদের পণ্য</h2></div><p>পণ্যের প্রাপ্যতা, দাম ও ব্যবহার বিক্রেতার সঙ্গে নিশ্চিত করুন।</p></div>
 <div class="cards">{product_cards}</div></section>
