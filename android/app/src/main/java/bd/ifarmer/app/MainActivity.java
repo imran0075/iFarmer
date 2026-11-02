@@ -2,6 +2,8 @@ package bd.ifarmer.app;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.os.Build;
+import android.Manifest;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.webkit.WebChromeClient;
@@ -13,7 +15,6 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.provider.MediaStore;
 import android.graphics.Color;
-import android.os.Environment;
 import android.view.View;
 import android.widget.Toast;
 
@@ -21,7 +22,6 @@ import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 
 import java.io.File;
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -30,6 +30,7 @@ public class MainActivity extends Activity {
     private static final String HOME = "https://ifarmer.onrender.com/";
     private static final int LOCATION_PERMISSION_REQUEST = 4101;
     private static final int FILE_CHOOSER_REQUEST = 4102;
+    private static final int NOTIFICATION_PERMISSION_REQUEST = 4103;
 
     private WebView webView;
     private ValueCallback<Uri[]> filePathCallback;
@@ -98,6 +99,17 @@ public class MainActivity extends Activity {
         setContentView(webView);
         if (savedInstanceState == null) webView.loadUrl(HOME);
         else webView.restoreState(savedInstanceState);
+
+        requestNotificationPermission();
+    }
+
+    private void requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= 33
+                && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[] { Manifest.permission.POST_NOTIFICATIONS },
+                    NOTIFICATION_PERMISSION_REQUEST);
+        }
     }
 
     private boolean hasLocationPermission() {
