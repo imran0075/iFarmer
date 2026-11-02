@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "973721838048",
+    "project_id": "ifarmer-24643",
+    "storage_bucket": "ifarmer-24643.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:973721838048:android:2d956efaf47c7d3a880b85",
+        "android_client_info": {
+          "package_name": "bd.ifarmer.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAG9d1HRGYPR54S8oPIF8IBQvb4f2MPOik"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
