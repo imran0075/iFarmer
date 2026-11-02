@@ -55,6 +55,17 @@ CATEGORY_DATA = {
     "poultry": {"title":"পোল্ট্রি বিভাগ","icon":"🐔","items":["পোল্ট্রি - মুরগি","পোল্ট্রি - হাঁস","পোল্ট্রি - টার্কি","পোল্ট্রি - কোয়েল"],"desc":"মুরগি, হাঁস, টার্কি ও কোয়েল পালন ও স্বাস্থ্য ব্যবস্থাপনা।"},
 }
 
+@router.get("/agri/category/livestock-poultry", response_class=HTMLResponse)
+def livestock_poultry_page():
+    body = """<div class="eyebrow">iFarmer · জ্ঞানভান্ডার</div><h1>🐟 মৎস্য ও প্রাণিসম্পদ বিভাগ</h1>
+<p>আপনার প্রয়োজনীয় বিভাগ নির্বাচন করুন।</p>
+<div class="cards">
+<article class="card"><div class="card-icon">🐟</div><h2>মৎস্য</h2><p>মাছ চাষ, পুকুর ব্যবস্থাপনা ও পরিচর্যা।</p><a class="btn primary" href="/agri/category/fish">মৎস্য বিভাগে যান</a></article>
+<article class="card"><div class="card-icon">🐄</div><h2>প্রাণিসম্পদ</h2><p>গরু, ছাগল ও ভেড়া পালন, খাদ্য ও স্বাস্থ্য।</p><a class="btn primary" href="/agri/category/livestock">প্রাণিসম্পদ বিভাগে যান</a></article>
+<article class="card"><div class="card-icon">🐔</div><h2>হাঁস-মুরগি / পোল্ট্রি</h2><p>মুরগি, হাঁস, টার্কি ও কোয়েল পালন এবং স্বাস্থ্য ব্যবস্থাপনা।</p><a class="btn primary" href="/agri/category/poultry">হাঁস-মুরগি / পোল্ট্রি বিভাগে যান</a></article>
+</div><p><a href="/">হোমে ফিরে যান</a></p>"""
+    return shell("মৎস্য ও প্রাণিসম্পদ বিভাগ", body)
+
 @router.get("/agri/category/{category}", response_class=HTMLResponse)
 def category_page(category: str, q: str = ""):
     data = CATEGORY_DATA.get(category)
