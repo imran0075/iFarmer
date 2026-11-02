@@ -135,7 +135,7 @@ def page(title, body, active=""):
 <meta name="theme-color" content="#176b45"><title>{esc(title)} · iFarmer</title>
 <link rel="stylesheet" href="/static/style.css"></head><body>
 <header class="top"><a class="brand" href="/"><span class="logo">🌱</span><span>iFarmer</span></a>
-<nav><a href="/#products">পণ্য</a><a href="/#order">অর্ডার</a><a href="/track-order">অর্ডার ট্র্যাক</a><a href="/partner">পার্টনার হোন</a><a href="/partner/login">পার্টনার লগইন</a><a href="/agri/category/fish">মৎস্য</a><a href="/agri/category/livestock">প্রাণিসম্পদ</a><a href="/agri">কৃষি সহায়ক</a></nav></header>
+<nav><a href="/#products">পণ্য</a><a href="/#order">অর্ডার</a><a href="/track-order">অর্ডার ট্র্যাক</a><a href="/partner">পার্টনার হোন</a><a href="/partner/login">পার্টনার লগইন</a><a href="/agri">কৃষি সহায়ক</a><a href="/agri/category/fish">মৎস্য ও প্রাণিসম্পদ</a></nav></header>
 {body}
 <nav class="mobile-dock" aria-label="প্রধান মেনু"><a href="/">⌂<span>হোম</span></a><a href="/agri">🌱<span>কৃষি</span></a><a href="/#products">▦<span>পণ্য</span></a><a href="/partner/login">♙<span>প্রোফাইল</span></a></nav>
 <footer><b>iFarmer</b><p>কৃষির ডিজিটাল সহযাত্রী</p><div><a href="/privacy">গোপনীয়তা</a> · <a href="/terms">শর্তাবলি</a> · <a href="/admin">মালিক লগইন</a></div>
@@ -187,17 +187,15 @@ def home(request: Request):
 <div class="hero-note">সহজ অর্ডার · ফোনে নিশ্চিতকরণ · ডেলিভারির নিয়ম বিক্রেতার সঙ্গে নিশ্চিত করুন</div>
 </section>
 <section class="stats"><div><b>🌾</b><span>কৃষি পণ্য</span></div><div><b>🛒</b><span>সহজ অর্ডার</span></div><div><b>📞</b><span>ফোনে নিশ্চিতকরণ</span></div><div><b>🏪</b><span>স্থানীয় পার্টনার</span></div></section>
-<section class="section" id="services">
-<div class="section-head"><div><div class="eyebrow">জ্ঞানভান্ডার ও সেবা</div><h2>আপনার প্রয়োজনীয় বিভাগ বেছে নিন</h2></div><p>কৃষি, মৎস্য ও প্রাণিসম্পদ বিষয়ে সহায়ক তথ্য দেখুন।</p></div>
-<div class="cards">
-<article class="card"><div class="card-icon">🌾</div><h3>কৃষি</h3><p>ফসল, আবহাওয়া ও কৃষি সহায়ক তথ্য।</p><a class="btn primary" href="/agri">কৃষি বিভাগে যান</a></article>
-<article class="card"><div class="card-icon">🐟</div><h3>মৎস্য</h3><p>মাছ চাষ, পুকুর ব্যবস্থাপনা ও পরিচর্যার তথ্য।</p><a class="btn primary" href="/agri/category/fish">মৎস্য বিভাগে যান</a></article>
-<article class="card"><div class="card-icon">🐄</div><h3>প্রাণিসম্পদ</h3><p>গরু, ছাগল ও অন্যান্য গবাদিপশুর পালন ও পরিচর্যা।</p><a class="btn primary" href="/agri/category/livestock">প্রাণিসম্পদ বিভাগে যান</a></article>
-<article class="card"><div class="card-icon">🐔</div><h3>হাঁস-মুরগি</h3><p>হাঁস-মুরগি পালন ও পরিচর্যার তথ্য।</p><a class="btn primary" href="/agri/category/poultry">হাঁস-মুরগি বিভাগে যান</a></article>
-</div></section>
 <section class="section" id="agriculture">
 <div class="section-head"><div><div class="eyebrow">কৃষকের ডিজিটাল সহকারী</div><h2>কৃষি আবহাওয়া</h2></div><p>জেলাভিত্তিক তাপমাত্রা, বৃষ্টি ও বাতাসের তথ্য।</p></div>
 <div class="cards"><article class="card"><div class="card-icon">🌦️</div><h3>কৃষি আবহাওয়া</h3><p>আপনার এলাকার আবহাওয়ার তথ্য দেখুন।</p><a class="btn primary" href="/agri/weather">আবহাওয়া দেখুন</a></article></div></section>
+<section class="section" id="services">
+<div class="section-head"><div><div class="eyebrow">জ্ঞানভান্ডার ও সেবা</div><h2>আপনার প্রয়োজনীয় বিভাগ বেছে নিন</h2></div><p>কৃষি এবং মৎস্য ও প্রাণিসম্পদ বিভাগের সহায়ক তথ্য।</p></div>
+<div class="cards">
+<article class="card"><div class="card-icon">🌾</div><h3>কৃষি বিভাগ</h3><p>ফসল, আবহাওয়া ও কৃষি সহায়ক তথ্য।</p><a class="btn primary" href="/agri">কৃষি বিভাগে যান</a></article>
+<article class="card"><div class="card-icon">🐟🐄</div><h3>মৎস্য ও প্রাণিসম্পদ বিভাগ</h3><p>মাছ চাষ, গবাদিপশু পালন এবং হাঁস-মুরগি ও পোল্ট্রি পরিচর্যার তথ্য।</p><div class="actions"><a class="btn primary" href="/agri/category/fish">মৎস্য</a><a class="btn primary" href="/agri/category/livestock">প্রাণিসম্পদ</a><a class="btn light" href="/agri/category/poultry">হাঁস-মুরগি / পোল্ট্রি</a></div></article>
+</div></section>
 <section id="products" class="section"><div class="section-head"><div><div class="eyebrow">iFarmer মার্কেটপ্লেস</div><h2>পার্টনারদের পণ্য</h2></div><p>পণ্যের প্রাপ্যতা, দাম ও ব্যবহার বিক্রেতার সঙ্গে নিশ্চিত করুন।</p></div>
 <div class="cards">{product_cards}</div></section>
 <section id="order" class="section order-section"><div class="section-head"><div><div class="eyebrow">অর্ডার রিকোয়েস্ট</div><h2>পণ্য অর্ডার</h2></div><p>পণ্য অর্ডার বাটনে চাপ দেওয়ার পর অর্ডারের তথ্য দিতে পারবেন।</p></div>
