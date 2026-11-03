@@ -138,7 +138,7 @@ def page(title, body, active=""):
     return f"""<!doctype html><html lang="bn"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#176b45"><title>{esc(title)} · iFarmer</title>
-<link rel="stylesheet" href="/static/style.css"></head><body>
+<link rel="stylesheet" href="/static/style.css?v=bcedc5ce04aa"><meta name="color-scheme" content="light"></head><body>
 <header class="top"><a class="brand" href="/"><span class="logo">🌱</span><span>iFarmer</span></a>
 <nav><a href="/#products">পণ্য</a><a href="/#order">অর্ডার</a><a href="/track-order">অর্ডার ট্র্যাক</a><a href="/partner">পার্টনার হোন</a><a href="/partner/login">পার্টনার লগইন</a><a href="/agri">কৃষি সহায়ক</a><a href="/agri/category/fish">মৎস্য ও প্রাণিসম্পদ</a></nav></header>
 {body}
