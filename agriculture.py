@@ -161,6 +161,18 @@ async function detectMyLocation() {{
     const lon = position.coords.longitude;
     status.textContent = 'অবস্থান শনাক্ত হয়েছে। আবহাওয়ার তথ্য আনা হচ্ছে…';
     try {{
+      let area = {{}};
+      try {{
+        const geo = await fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=' + encodeURIComponent(lat) + '&lon=' + encodeURIComponent(lon) + '&zoom=18&addressdetails=1&accept-language=bn');
+        if (geo.ok) {{
+          const g = await geo.json();
+          area = g.address || {{}};
+        }}
+      }} catch (e) {{ console.log('স্থানীয় ঠিকানা শনাক্ত করা যায়নি', e); }}
+      const divisionName = area.state || area.region || 'শনাক্ত হয়নি';
+      const districtName = area.county || area.state_district || area.city_district || area.district || area.city || 'শনাক্ত হয়নি';
+      const upazilaName = area.municipality || area.city || area.town || area.suburb || area.city_district || 'শনাক্ত হয়নি';
+      const unionName = area.village || area.suburb || area.neighbourhood || area.hamlet || area.quarter || area.locality || 'শনাক্ত হয়নি';
       const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&current=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m&daily=precipitation_probability_max,temperature_2m_max,temperature_2m_min&timezone=Asia%2FDhaka&forecast_days=1';
       const response = await fetch(url);
       if (!response.ok) throw new Error('weather unavailable');
@@ -168,7 +180,16 @@ async function detectMyLocation() {{
       const cur = data.current;
       const rain = data.daily.precipitation_probability_max[0];
       status.textContent = 'আপনার বর্তমান অবস্থানের আবহাওয়া';
-      result.innerHTML = '<div class="card"><h2>এখন ' + cur.temperature_2m + '°C</h2><p>আর্দ্রতা: ' + cur.relative_humidity_2m + '%</p><p>বৃষ্টিপাত: ' + cur.precipitation + ' মিমি</p><p>বাতাস: ' + cur.wind_speed_10m + ' কিমি/ঘণ্টা</p><p>আজ বৃষ্টির সম্ভাবনা: ' + (rain == null ? 'তথ্য নেই' : rain + '%') + '</p><p>সর্বোচ্চ: ' + data.daily.temperature_2m_max[0] + '°C · সর্বনিম্ন: ' + data.daily.temperature_2m_min[0] + '°C</p></div>';
+      result.innerHTML = '<div class="card"><h2>আপনার এলাকার আবহাওয়া</h2><p>এখন ' + cur.temperature_2m + '°C</p><p>আর্দ্রতা: ' + cur.relative_humidity_2m + '%</p><p>বৃষ্টিপাত: ' + cur.precipitation + ' মিমি</p><p>বাতাস: ' + cur.wind_speed_10m + ' কিমি/ঘণ্টা</p><p>আজ বৃষ্টির সম্ভাবনা: ' + (rain == null ? 'তথ্য নেই' : rain + '%') + '</p><p>সর্বোচ্চ: ' + data.daily.temperature_2m_max[0] + '°C · সর্বনিম্ন: ' + data.daily.temperature_2m_min[0] + '°C</p></div>';
+      const place = document.createElement('div');
+      place.className = 'card';
+      place.innerHTML = '<h3>📍 শনাক্ত করা অবস্থান</h3>';
+      [['বিভাগ',divisionName],['জেলা',districtName],['উপজেলা/থানা',upazilaName],['ইউনিয়ন/এলাকা',unionName]].forEach(([label,value]) => {{
+        const p = document.createElement('p');
+        p.textContent = label + ': ' + value;
+        place.appendChild(p);
+      }});
+      result.prepend(place);
     }} catch (e) {{
       status.textContent = 'লোকেশন পাওয়া গেছে, কিন্তু আবহাওয়ার তথ্য আনা যায়নি। ইন্টারনেট পরীক্ষা করে আবার চেষ্টা করুন।';
     }}
