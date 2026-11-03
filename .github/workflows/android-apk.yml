@@ -13,30 +13,56 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
+
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
+
       - name: Install Android SDK packages
         run: |
           sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
-      - name: Build debug APK
+
+      - name: Decode release keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "Missing ANDROID_KEYSTORE_BASE64 repository secret"
+            exit 1
+          fi
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/ifarmer-release.jks"
+          test -s "$RUNNER_TEMP/ifarmer-release.jks"
+
+      - name: Build signed release APK
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/ifarmer-release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$ANDROID_KEYSTORE_PASSWORD" ] || [ -z "$ANDROID_KEY_ALIAS" ] || [ -z "$ANDROID_KEY_PASSWORD" ]; then
+            echo "One or more Android signing secrets are missing"
+            exit 1
+          fi
           cd android
-          gradle --no-daemon assembleDebug
-      - name: Upload APK
+          gradle --no-daemon assembleRelease
+
+      - name: Upload signed APK
         uses: actions/upload-artifact@v4
         with:
-          name: iFarmer-Android-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: iFarmer-Signed-Android-APK
+          path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 30
