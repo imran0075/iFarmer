@@ -331,3 +331,21 @@ footer{background:linear-gradient(115deg,#092d20,#104d31);border-top:4px solid #
  .quick-actions a{background:#fff}
  .card{box-shadow:0 9px 25px #143b2b0c}
 }
+
+/* Animated iFarmer launch splash */
+.ifarmer-splash{position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(circle at 50% 42%,#1b7048 0,#10452f 48%,#09291d 100%);color:#fff;opacity:1;visibility:visible;transition:opacity .65s ease,visibility .65s ease}
+.ifarmer-splash:before,.ifarmer-splash:after{content:"";position:absolute;width:270px;height:270px;border:1px solid rgba(207,239,213,.18);border-radius:50%;animation:splash-pulse 2.4s ease-out infinite}
+.ifarmer-splash:after{animation-delay:1.2s}
+.splash-orbit{position:absolute;width:190px;height:190px;border:1px dashed rgba(218,242,222,.28);border-radius:50%;animation:splash-spin 12s linear infinite}
+.splash-mark{width:92px;height:92px;display:grid;place-items:center;border-radius:28px;background:linear-gradient(145deg,#f5fff5,#ccebd2);box-shadow:0 18px 50px #031d13a8;font-size:49px;animation:splash-pop .8s cubic-bezier(.2,.8,.2,1) both;z-index:1}
+.splash-name{margin-top:22px;font-size:clamp(38px,9vw,52px);font-weight:950;letter-spacing:-2px;animation:splash-rise .8s .18s both;z-index:1}
+.splash-tagline{margin-top:3px;color:#d2f1d8;font-size:17px;font-weight:650;letter-spacing:3px;animation:splash-rise .8s .38s both;z-index:1}
+.splash-progress{width:116px;height:3px;margin-top:34px;border-radius:9px;background:#ffffff30;overflow:hidden;animation:splash-rise .8s .5s both;z-index:1}
+.splash-progress i{display:block;width:45%;height:100%;border-radius:9px;background:#d7f5b8;animation:splash-loading 1.35s ease-in-out infinite}
+.ifarmer-splash.splash-hide{opacity:0;visibility:hidden;pointer-events:none}
+@keyframes splash-pop{0%{opacity:0;transform:scale(.55) rotate(-12deg)}75%{transform:scale(1.08) rotate(3deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+@keyframes splash-rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes splash-spin{to{transform:rotate(360deg)}}
+@keyframes splash-pulse{0%{transform:scale(.72);opacity:.55}100%{transform:scale(1.45);opacity:0}}
+@keyframes splash-loading{0%{transform:translateX(-120%)}100%{transform:translateX(270%)}}
+@media(prefers-reduced-motion:reduce){.ifarmer-splash *{animation:none!important}.ifarmer-splash{transition:none}}
