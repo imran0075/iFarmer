@@ -17,6 +17,7 @@ import android.provider.MediaStore;
 import android.graphics.Color;
 import android.view.View;
 import android.widget.Toast;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
@@ -101,6 +102,7 @@ public class MainActivity extends Activity {
         else webView.restoreState(savedInstanceState);
 
         requestNotificationPermission();
+        FirebaseMessaging.getInstance().subscribeToTopic("ifarmer_all");
     }
 
     private void requestNotificationPermission() {
