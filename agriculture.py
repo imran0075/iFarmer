@@ -184,14 +184,6 @@ async function detectMyLocation() {{
       const rain = data.daily.precipitation_probability_max[0];
       status.textContent = 'আপনার বর্তমান অবস্থানের আবহাওয়া';
       result.innerHTML = '<div class="card"><h2>আপনার এলাকার আবহাওয়া</h2><p>এখন ' + cur.temperature_2m + '°C</p><p>আর্দ্রতা: ' + cur.relative_humidity_2m + '%</p><p>বৃষ্টিপাত: ' + cur.precipitation + ' মিমি</p><p>বাতাস: ' + cur.wind_speed_10m + ' কিমি/ঘণ্টা</p><p>আজ বৃষ্টির সম্ভাবনা: ' + (rain == null ? 'তথ্য নেই' : rain + '%') + '</p><p>সর্বোচ্চ: ' + data.daily.temperature_2m_max[0] + '°C · সর্বনিম্ন: ' + data.daily.temperature_2m_min[0] + '°C</p></div>';
-      const place = document.createElement('div');
-      place.className = 'card';
-      place.innerHTML = '<h3>📍 শনাক্ত করা অবস্থান</h3>';
-      [['বিভাগ',divisionName],['জেলা',districtName],['উপজেলা/থানা',upazilaName],['ইউনিয়ন/এলাকা',unionName]].forEach(([label,value]) => {{
-        const p = document.createElement('p');
-        p.textContent = label + ': ' + value;
-        place.appendChild(p);
-      }});
       result.prepend(place);
     }} catch (e) {{
       status.textContent = 'লোকেশন পাওয়া গেছে, কিন্তু আবহাওয়ার তথ্য আনা যায়নি। ইন্টারনেট পরীক্ষা করে আবার চেষ্টা করুন।';
