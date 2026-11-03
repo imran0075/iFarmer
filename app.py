@@ -138,7 +138,7 @@ def page(title, body, active=""):
     return f"""<!doctype html><html lang="bn"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#176b45"><title>{esc(title)} · iFarmer</title>
-<link rel="stylesheet" href="/static/style.css?v=bcedc5ce04aa"><meta name="color-scheme" content="light"></head><body>
+<link rel="stylesheet" href="/static/style.css?v=home-premium-20261103"><meta name="color-scheme" content="light"></head><body>
 <header class="top"><a class="brand" href="/"><span class="logo">🌱</span><span>iFarmer</span></a>
 <nav><a href="/#products">পণ্য</a><a href="/#order">অর্ডার</a><a href="/track-order">অর্ডার ট্র্যাক</a><a href="/partner">পার্টনার হোন</a><a href="/partner/login">পার্টনার লগইন</a><a href="/agri">কৃষি সহায়ক</a><a href="/agri/category/fish">মৎস্য ও প্রাণিসম্পদ</a></nav></header>
 {body}
@@ -185,13 +185,21 @@ def home(request: Request):
         product_cards = '<article class="card"><div class="card-icon">🌱</div><h3>পণ্য শিগগিরই আসছে</h3><p>অনুমোদিত পার্টনাররা পণ্য প্রকাশ করলে এখানে দেখা যাবে।</p></article>'
     body = f"""
 <main>
-<section class="hero">
-<div class="pill">কৃষির ডিজিটাল সহযাত্রী</div><h1>কৃষি পণ্য ও সেবা,<br><span>এখন আরও সহজে</span></h1>
-<p>কৃষকের প্রয়োজনীয় পণ্য খুঁজুন, অর্ডারের অনুরোধ পাঠান এবং স্থানীয় কৃষি সেবার সঙ্গে যুক্ত থাকুন।</p>
-<div class="actions"><a class="btn primary" href="#products">পণ্য দেখুন</a><a class="btn light" href="/partner">পার্টনার হোন</a></div>
-<div class="hero-note">সহজ অর্ডার · ফোনে নিশ্চিতকরণ · ডেলিভারির নিয়ম বিক্রেতার সঙ্গে নিশ্চিত করুন</div>
+<section class="hero home-hero">
+<div class="hero-copy"><div class="pill">🌿 কৃষকের পাশে, সারা বাংলাদেশে</div>
+<h1>স্মার্ট কৃষির<br><span>বিশ্বস্ত সহযাত্রী</span></h1>
+<p>কৃষি পণ্য খুঁজুন, এলাকার আবহাওয়া জানুন এবং প্রয়োজনীয় কৃষি সহায়তা নিন—সব এক জায়গায়।</p>
+<div class="actions"><a class="btn primary" href="#products">🛒 পণ্য কিনুন</a><a class="btn light" href="/agri">কৃষি সহায়তা নিন →</a></div>
+<div class="hero-trust">✓ সহজ অর্ডার <i>·</i> ✓ ফোনে নিশ্চিতকরণ <i>·</i> ✓ স্থানীয় পার্টনার</div></div>
+<div class="hero-art" aria-hidden="true"><div class="art-sun"></div><div class="art-leaf">🌾</div><div class="art-tag">iFarmer<br><small>Grow smarter</small></div></div>
 </section>
-<section class="stats"><div><b>🌾</b><span>কৃষি পণ্য</span></div><div><b>🛒</b><span>সহজ অর্ডার</span></div><div><b>📞</b><span>ফোনে নিশ্চিতকরণ</span></div><div><b>🏪</b><span>স্থানীয় পার্টনার</span></div></section>
+<section class="quick-actions" aria-label="দ্রুত সেবা">
+<a href="/agri/weather"><span>🌦️</span><b>আবহাওয়া</b><small>এলাকার পূর্বাভাস</small></a>
+<a href="/agri/fertilizer"><span>🧮</span><b>সার হিসাব</b><small>মাত্রা নির্ণয়</small></a>
+<a href="/agri/pesticide"><span>🧴</span><b>কীটনাশক হিসাব</b><small>লেবেল অনুযায়ী</small></a>
+<a href="/agri/diagnose"><span>📷</span><b>ফসলের সমস্যা</b><small>ছবি জমা দিন</small></a>
+</section>
+<section class="stats home-stats"><div><b>🇧🇩</b><span>সারা বাংলাদেশ</span></div><div><b>🛒</b><span>সহজ অর্ডার</span></div><div><b>📞</b><span>ফোনে নিশ্চিতকরণ</span></div><div><b>🏪</b><span>স্থানীয় পার্টনার</span></div></section>
 <section class="section" id="agriculture">
 <div class="section-head"><div><div class="eyebrow">কৃষকের ডিজিটাল সহকারী</div><h2>কৃষি আবহাওয়া</h2></div><p>জেলাভিত্তিক তাপমাত্রা, বৃষ্টি ও বাতাসের তথ্য।</p></div>
 <div class="cards"><article class="card"><div class="card-icon">🌦️</div><h3>কৃষি আবহাওয়া</h3><p>আপনার এলাকার আবহাওয়ার তথ্য দেখুন।</p><a class="btn primary" href="/agri/weather">আবহাওয়া দেখুন</a></article></div></section>
