@@ -156,7 +156,7 @@ def page(title, body, active=""):
 }})();
 </script>
 <div id="google_translate_element" style="position:fixed;right:10px;top:10px;z-index:9999"></div>
-<script>function iFarmerLanguage(lang){document.cookie="googtrans=/bn/"+lang+";path=/";document.cookie="googtrans=/bn/"+lang+";path=/;domain="+location.hostname;location.reload()}function googleTranslateElementInit(){new google.translate.TranslateElement({pageLanguage:"bn",includedLanguages:"en,bn",autoDisplay:false}, "google_translate_element");}</script><script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+<script>function googleTranslateElementInit(){{new google.translate.TranslateElement({{pageLanguage:"bn",includedLanguages:"en,bn",autoDisplay:false}}, "google_translate_element");}}</script><script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 <header class="top"><a class="brand" href="/"><span class="logo">🌱</span><span>iFarmer</span></a>
 <nav><a href="/#products">পণ্য</a><a href="/#order">অর্ডার</a><a href="/track-order">অর্ডার ট্র্যাক</a><a href="/partner">পার্টনার হোন</a><a href="/partner/login">পার্টনার লগইন</a><a href="/agri">কৃষি সহায়ক</a><a href="/agri/category/fish">মৎস্য ও প্রাণিসম্পদ</a></nav></header>
 {body}
