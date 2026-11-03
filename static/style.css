@@ -287,3 +287,47 @@ footer{border-radius:0;background:linear-gradient(120deg,#0b3324,#145b39)}
  .home-hero{grid-template-columns:1.15fr .85fr;padding:35px}
  .quick-actions{grid-template-columns:repeat(2,1fr)}
 }
+
+
+/* iFarmer Atelier — premium visual layer */
+:root{--atelier-ink:#102d21;--atelier-green:#087a43;--atelier-gold:#c5a66a;--atelier-border:#e4ece5}
+body{background:#f5f8f5;color:var(--atelier-ink)}
+.top{background:rgba(255,255,255,.9);border-bottom:1px solid rgba(222,234,224,.8);box-shadow:0 10px 35px rgba(17,54,34,.06)}
+.brand{font-weight:950;letter-spacing:-1.4px}
+.logo{border:3px solid #e4f2e7;box-shadow:0 8px 22px #0b6b3b30}
+.home-hero{background:linear-gradient(115deg,#e4f3e7 0%,#f9fcf9 48%,#d6ebdc 100%);border:1px solid #d3e6d8;box-shadow:0 28px 75px rgba(20,69,39,.13);position:relative}
+.home-hero:after{content:"";position:absolute;inset:12px;border:1px solid rgba(255,255,255,.65);border-radius:25px;pointer-events:none}
+.home-hero .pill{color:#075e34;background:#fff;border:1px solid #d5e9d9;box-shadow:0 8px 22px #174b2810}
+.home-hero h1{font-weight:950;text-shadow:0 2px 0 #ffffff70}
+.home-hero h1 span{background:linear-gradient(90deg,#087a43,#29985b);-webkit-background-clip:text;background-clip:text;color:transparent}
+.home-hero .hero-copy>p{color:#526c5b}
+.art-sun{background:radial-gradient(circle at 35% 28%,#f5ffcf,#a6d9ad 72%);border:8px solid #ffffff70}
+.art-leaf{filter:drop-shadow(0 24px 20px #17452d35)}
+.art-tag{border:1px solid #fff;box-shadow:0 18px 40px #183d281c}
+.quick-actions a{background:linear-gradient(145deg,#fff,#f8fcf9);border:1px solid #e0ebe2;box-shadow:0 12px 28px #183d280a}
+.quick-actions a span{background:linear-gradient(145deg,#dff2e4,#f5faf6);border:1px solid #d7eadc}
+.home-stats>div{background:linear-gradient(145deg,#fff,#f8fbf8);border:1px solid #e2ebe4}
+.section-head .eyebrow,.eyebrow{color:#a17d3f;letter-spacing:1.8px}
+.section-head h2{color:#123b29}
+.card{border:1px solid #e1eae3;background:linear-gradient(155deg,#fff 0%,#fbfdfb 100%);box-shadow:0 14px 38px rgba(16,59,43,.065)}
+.card:hover{box-shadow:0 22px 48px rgba(16,59,43,.12);border-color:#c9dfce}
+.card-icon{background:linear-gradient(145deg,#e1f2e5,#f7fbf7);border:1px solid #dcebe0}
+.btn.primary{background:linear-gradient(120deg,#0a8c49,#07532f);box-shadow:0 10px 24px rgba(8,123,67,.22);border:1px solid #087441}
+.btn.light{background:linear-gradient(145deg,#fff,#f5faf6);border:1px solid #dce9df}
+#products .card{border-radius:24px}
+#products .card>p:first-of-type{color:#087a43}
+.product-photo{background:linear-gradient(145deg,#f4f8f4,#fff);border:1px solid #e6eee7}
+.partner-banner{background:radial-gradient(circle at 90% 10%,#2c8053 0,transparent 35%),linear-gradient(115deg,#0b3424,#145f3b);border:1px solid #2a7950;box-shadow:0 24px 55px #0b4a2b30}
+.partner-banner .eyebrow{color:#d7c18e}
+.partner-banner .btn.light{background:#fff;color:#075c35;border:0}
+.form.card{box-shadow:0 18px 44px #153d270c}
+.form input,.form select,.form textarea{border:1px solid #dce8de;border-radius:13px}
+footer{background:linear-gradient(115deg,#092d20,#104d31);border-top:4px solid #c5a66a}
+.mobile-dock{border:1px solid #d9e8dd;box-shadow:0 14px 40px #123b2930}
+@media(max-width:700px){
+ .home-hero{box-shadow:0 18px 44px #17472a18}
+ .home-hero:after{inset:7px;border-radius:18px}
+ .home-hero h1{font-size:clamp(40px,10.5vw,52px)}
+ .quick-actions a{background:#fff}
+ .card{box-shadow:0 9px 25px #143b2b0c}
+}
