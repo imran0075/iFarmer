@@ -141,61 +141,13 @@ def official_data():
 
 @router.get("/agri/weather", response_class=HTMLResponse)
 def weather_form():
-    opts = "".join(f'<option>{html.escape(c)}</option>' for c in CITIES)
-    return shell("আবহাওয়া", f"""<div class="eyebrow">দৈনিক আবহাওয়া বার্তা</div><h1>আপনার এলাকার আবহাওয়া</h1>
-<div class="card"><p>পাতা খোলার সঙ্গে সঙ্গে আপনার ফোনের অবস্থান শনাক্ত করার অনুমতি চাওয়া হবে। অনুমতি দিলে আপনার অবস্থানের আবহাওয়া দেখাবে।</p>
-<button class="btn primary" type="button" onclick="detectMyLocation()">📍 লোকেশন শনাক্তকরণ</button>
-<p id="gps-status" class="fine" role="status" aria-live="polite">আপনার অবস্থানের অনুমতি চাওয়া হচ্ছে…</p>
-<div id="gps-weather"></div></div>
-<form class="form card" method="post"><label>জেলা/এলাকা<select name="city">{opts}</select></label><button class="btn primary">জেলার আবহাওয়া দেখুন</button></form>
-<p class="fine">লোকেশন অনুমতি না দিলে জেলা নির্বাচন করে আবহাওয়া দেখা যাবে। আপনার অবস্থান এই পাতায় আবহাওয়া দেখানোর জন্য ব্যবহার করা হবে।</p>
+    return shell("আবহাওয়া", """<h1>আপনার এলাকার আবহাওয়া</h1><div class="card"><p>লোকেশন অনুমতি দিন। এলাকা নির্বাচন করতে হবে না।</p><p id="status" role="status">GPS অবস্থান শনাক্ত করা হচ্ছে…</p><div id="place"></div><div id="weather"></div></div>
 <script>
-async function detectMyLocation() {{
-  const status = document.getElementById('gps-status');
-  const result = document.getElementById('gps-weather');
-  if (!navigator.geolocation) {{ status.textContent = 'আপনার ব্রাউজারে GPS লোকেশন সুবিধা নেই।'; return; }}
-  status.textContent = 'আপনার অবস্থানের অনুমতি চাওয়া হচ্ছে…';
-  result.innerHTML = '';
-  navigator.geolocation.getCurrentPosition(async function(position) {{
-    const lat = position.coords.latitude;
-    const lon = position.coords.longitude;
-    status.textContent = 'অবস্থান শনাক্ত হয়েছে। আবহাওয়ার তথ্য আনা হচ্ছে…';
-    try {{
-      // Never infer administrative names from unverified layer metadata.
-      // Request weather at the phone's GPS coordinates.
-      const locationAccuracy = position.coords.accuracy;
-      const place = document.createElement('div');
-      place.className = 'card';
-      place.innerHTML = '<h3>📍 GPS অবস্থান</h3>';
-      const coord = document.createElement('p');
-      coord.textContent = 'অক্ষাংশ: ' + lat.toFixed(5) + ' · দ্রাঘিমাংশ: ' + lon.toFixed(5);
-      place.appendChild(coord);
-      const accuracy = document.createElement('p');
-      accuracy.textContent = 'GPS নির্ভুলতার আনুমানিক সীমা: ' + Math.round(locationAccuracy) + ' মিটার';
-      place.appendChild(accuracy);
-      const note = document.createElement('p');
-      note.textContent = 'বিভাগ, জেলা, উপজেলা ও ইউনিয়নের নাম যাচাইকৃত সীমানা-ডেটা ছাড়া দেখানো হচ্ছে না।';
-      place.appendChild(note);
-      const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&current=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m&daily=precipitation_probability_max,temperature_2m_max,temperature_2m_min&timezone=Asia%2FDhaka&forecast_days=1';
-      const response = await fetch(url);
-      if (!response.ok) throw new Error('weather unavailable');
-      const data = await response.json();
-      const cur = data.current;
-      const rain = data.daily.precipitation_probability_max[0];
-      status.textContent = 'আপনার বর্তমান অবস্থানের আবহাওয়া';
-      result.innerHTML = '<div class="card"><h2>আপনার এলাকার আবহাওয়া</h2><p>এখন ' + cur.temperature_2m + '°C</p><p>আর্দ্রতা: ' + cur.relative_humidity_2m + '%</p><p>বৃষ্টিপাত: ' + cur.precipitation + ' মিমি</p><p>বাতাস: ' + cur.wind_speed_10m + ' কিমি/ঘণ্টা</p><p>আজ বৃষ্টির সম্ভাবনা: ' + (rain == null ? 'তথ্য নেই' : rain + '%') + '</p><p>সর্বোচ্চ: ' + data.daily.temperature_2m_max[0] + '°C · সর্বনিম্ন: ' + data.daily.temperature_2m_min[0] + '°C</p></div>';
-      result.prepend(place);
-    }} catch (e) {{
-      status.textContent = 'লোকেশন পাওয়া গেছে, কিন্তু আবহাওয়ার তথ্য আনা যায়নি। ইন্টারনেট পরীক্ষা করে আবার চেষ্টা করুন।';
-    }}
-  }}, function(error) {{
-    const messages = {{1:'লোকেশন অনুমতি দেওয়া হয়নি। Chrome Site settings থেকে Location → Allow করুন।',2:'ফোনের অবস্থান পাওয়া যাচ্ছে না। ফোনের Location চালু করুন।',3:'লোকেশন পেতে সময় শেষ হয়েছে। আবার চেষ্টা করুন।'}};
-    status.textContent = messages[error.code] || 'লোকেশন পাওয়া যায়নি। আবার চেষ্টা করুন.';
-  }}, {{enableHighAccuracy:true, timeout:15000, maximumAge:60000}});
-}}
-window.addEventListener('load', detectMyLocation);
+const labels={0:"পরিষ্কার",1:"প্রধানত পরিষ্কার",2:"আংশিক মেঘলা",3:"মেঘলা",45:"কুয়াশা",48:"কুয়াশা",51:"হালকা গুঁড়ি বৃষ্টি",53:"গুঁড়ি বৃষ্টি",55:"ঘন গুঁড়ি বৃষ্টি",61:"হালকা বৃষ্টি",63:"মাঝারি বৃষ্টি",65:"ভারী বৃষ্টি",80:"বৃষ্টির ঝাপটা",81:"বৃষ্টির ঝাপটা",82:"প্রবল বৃষ্টির ঝাপটা",95:"বজ্রসহ বৃষ্টি",96:"শিলাসহ বজ্রঝড়",99:"প্রবল শিলাসহ বজ্রঝড়"};
+function line(el,k,v){const p=document.createElement("p");p.textContent=k+": "+(v||"তথ্য পাওয়া যায়নি");el.appendChild(p)}
+function run(){navigator.geolocation.getCurrentPosition(async p=>{try{const lat=p.coords.latitude,lon=p.coords.longitude;const [g,w]=await Promise.all([fetch("https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&zoom=18&lat="+lat+"&lon="+lon),fetch("https://api.open-meteo.com/v1/forecast?latitude="+lat+"&longitude="+lon+"&current=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,weather_code&daily=weather_code,precipitation_probability_max,precipitation_sum,temperature_2m_max,temperature_2m_min&timezone=Asia%2FDhaka&forecast_days=7")]);if(!w.ok)throw Error();const d=await w.json();let a={};if(g.ok)a=(await g.json()).address||{};const pc=document.createElement("div");pc.className="card";pc.innerHTML="<h3>আপনার অবস্থান</h3>";line(pc,"ইউনিয়ন/এলাকা",a.union||a.village||a.town||a.municipality||a.city||a.suburb);line(pc,"উপজেলা",a.county);line(pc,"জেলা",a.state_district);line(pc,"বিভাগ",a.region||a.state);line(pc,"নোট","নাম OpenStreetMap থেকে; কিছু স্থানে প্রশাসনিক নাম অনুপস্থিত/ভিন্ন হতে পারে।");document.getElementById("place").replaceChildren(pc);const c=d.current,cc=document.createElement("div");cc.className="card";cc.innerHTML="<h2>এখনকার আবহাওয়া</h2>";line(cc,"অবস্থা",labels[c.weather_code]||"তথ্য নেই");line(cc,"তাপমাত্রা",c.temperature_2m+"°C");line(cc,"আর্দ্রতা",c.relative_humidity_2m+"%");line(cc,"বৃষ্টিপাত",c.precipitation+" মিমি");line(cc,"বাতাস",c.wind_speed_10m+" কিমি/ঘণ্টা");const fc=document.createElement("div");fc.className="card";fc.innerHTML="<h2>আগামী ৭ দিনের পূর্বাভাস</h2>";const t=document.createElement("table");t.innerHTML="<tr><th>তারিখ</th><th>আবহাওয়া</th><th>সর্বোচ্চ/সর্বনিম্ন</th><th>বৃষ্টির সম্ভাবনা</th><th>বৃষ্টি</th></tr>"+d.daily.time.map((x,i)=>"<tr><td>"+x+"</td><td>"+(labels[d.daily.weather_code[i]]||"তথ্য নেই")+"</td><td>"+d.daily.temperature_2m_max[i]+"/"+d.daily.temperature_2m_min[i]+"°C</td><td>"+d.daily.precipitation_probability_max[i]+"%</td><td>"+d.daily.precipitation_sum[i]+" মিমি</td></tr>").join("");fc.appendChild(t);document.getElementById("weather").replaceChildren(cc,fc);document.getElementById("status").textContent="GPS অবস্থানের আবহাওয়া ও ৭ দিনের পূর্বাভাস দেখানো হয়েছে";}catch(e){document.getElementById("status").textContent="আবহাওয়ার তথ্য পাওয়া যায়নি। ইন্টারনেট পরীক্ষা করুন।"}},e=>{document.getElementById("status").textContent="লোকেশন অনুমতি দিন এবং ফোনের GPS চালু রাখুন।"},{enableHighAccuracy:true,timeout:20000,maximumAge:60000})}
+window.addEventListener("load",run);
 </script>""")
-
 @router.post("/agri/weather", response_class=HTMLResponse)
 def weather_result(city: str=Form(...)):
     if city not in CITIES: raise HTTPException(400, "এলাকা নির্বাচন করুন")
