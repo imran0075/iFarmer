@@ -49,3 +49,13 @@ footer b,footer a{color:#c8ef8b}footer p{color:#c1d9c9}footer small{color:#91b69
   .mobile-dock a span{font-size:11px;font-weight:700}
   footer{padding-bottom:24px}
 }
+
+/* iFarmer mobile-first polish */
+html{scroll-padding-top:84px}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #a8d96c;outline-offset:3px}
+.top nav a{padding:8px 0;white-space:nowrap}
+.card{overflow:hidden}
+.card .btn{width:100%;margin-top:8px}
+.form input,.form select,.form textarea{font-size:16px}
+@media(max-width:700px){main{padding-left:16px;padding-right:16px}.top nav{width:100%;overflow-x:auto;flex-wrap:nowrap;padding:2px 0 5px;scrollbar-width:none}.top nav::-webkit-scrollbar{display:none}.hero{padding:30px 21px}.stats{gap:9px}.cards{gap:12px}.card{padding:19px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
