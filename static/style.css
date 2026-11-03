@@ -107,3 +107,36 @@ footer{padding:42px 20px;background:linear-gradient(135deg,#0d3826,#145b39)}
  .partner-banner{border-radius:21px}
  .mobile-dock{left:9px;right:9px;bottom:8px;border-radius:20px;box-shadow:0 10px 32px #123b2830}
 }
+
+
+/* iFarmer homepage premium layout */
+.home-hero{position:relative;isolation:isolate;overflow:hidden;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(230px,.65fr);align-items:center;gap:20px;min-height:410px;margin:28px auto 22px;padding:clamp(28px,6vw,68px);background:linear-gradient(115deg,#e5f6e9 0%,#f6fbf6 60%,#d9f0df 100%)}
+.home-hero:after{content:none}
+.hero-copy{position:relative;z-index:2}
+.hero-trust{margin-top:22px;color:#47705a;font-size:13px;font-weight:700}
+.hero-trust i{font-style:normal;color:#9bb9a4;padding:0 5px}
+.hero-art{height:280px;position:relative;display:grid;place-items:center}
+.art-sun{position:absolute;width:230px;height:230px;border-radius:50%;background:linear-gradient(145deg,#c8ed9c,#a9dba9);right:8%;top:8%;box-shadow:0 20px 50px #3e9c5830}
+.art-leaf{position:relative;z-index:1;font-size:clamp(130px,18vw,205px);filter:drop-shadow(0 16px 12px #315b3025);transform:rotate(-9deg)}
+.art-tag{position:absolute;z-index:2;bottom:8px;left:3%;padding:13px 20px;border:1px solid #fff;background:#ffffffdc;backdrop-filter:blur(10px);border-radius:15px;color:#087a3e;font-weight:900;box-shadow:0 10px 28px #184c2815}
+.art-tag small{font-size:10px;letter-spacing:1.5px;color:#718b78}
+.quick-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin:0 auto 28px}
+.quick-actions a{display:grid;grid-template-columns:48px 1fr;grid-template-rows:auto auto;column-gap:12px;align-items:center;padding:16px 14px;background:#fff;border:1px solid #e0ebe3;border-radius:18px;box-shadow:0 7px 22px #143b2b08;color:#153d2b;transition:transform .18s,box-shadow .18s}
+.quick-actions a:hover{transform:translateY(-3px);box-shadow:0 12px 26px #143b2b12}
+.quick-actions a span{grid-row:1/3;width:48px;height:48px;border-radius:15px;background:#e9f7ed;display:grid;place-items:center;font-size:25px}
+.quick-actions b{font-size:14px}
+.quick-actions small{font-size:11px;color:#718477;margin-top:3px}
+.home-stats{margin-top:10px}
+@media(max-width:700px){
+ .home-hero{grid-template-columns:1fr;min-height:unset;gap:0;margin:16px auto 14px;padding:27px 21px 12px}
+ .hero-art{height:155px;margin-top:0}
+ .art-sun{width:135px;height:135px;right:23%;top:2%}
+ .art-leaf{font-size:125px}
+ .art-tag{left:8%;bottom:0;padding:9px 14px;font-size:12px}
+ .hero-trust{font-size:11px;line-height:1.8;margin-top:16px}
+ .quick-actions{grid-template-columns:1fr 1fr;gap:9px;margin-bottom:18px}
+ .quick-actions a{grid-template-columns:40px 1fr;column-gap:9px;padding:12px 9px;border-radius:15px}
+ .quick-actions a span{width:40px;height:40px;font-size:22px;border-radius:12px}
+ .quick-actions b{font-size:12px}
+ .quick-actions small{font-size:10px}
+}
