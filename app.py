@@ -151,8 +151,8 @@ def page(title, body, active=""):
   const splash=document.getElementById('ifarmer-splash');
   if(!splash)return;
   try{{if(sessionStorage.getItem('ifarmer_splash_seen')){{splash.remove();return;}}sessionStorage.setItem('ifarmer_splash_seen','1');}}catch(e){{}}
-  window.addEventListener('load',()=>{{setTimeout(()=>{{splash.classList.add('splash-hide');setTimeout(()=>splash.remove(),700);}},1900);}});
-  setTimeout(()=>{{splash.classList.add('splash-hide');setTimeout(()=>splash.remove(),700);}},3500);
+  window.addEventListener('load',()=>{{setTimeout(()=>{{splash.classList.add('splash-hide');setTimeout(()=>splash.remove(),700);}},5500);}});
+  setTimeout(()=>{{splash.classList.add('splash-hide');setTimeout(()=>splash.remove(),700);}},7500);
 }})();
 </script>
 <header class="top"><a class="brand" href="/"><span class="logo">🌱</span><span>iFarmer</span></a>
