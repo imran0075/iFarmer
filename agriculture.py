@@ -37,7 +37,9 @@ DIAGNOSIS_TYPES = CROPS + LIVESTOCK_TYPES + ["অন্যান্য"]
 UNITS = {"একর":1.0,"শতক":0.01,"বিঘা":0.33,"হেক্টর":2.471}
 
 def shell(title, body):
-    return f"""<!doctype html><html lang="bn"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#176b45"><title>{title} · iFarmer</title><link rel="stylesheet" href="/static/style.css"><body><header class="top"><a class="brand" href="/">🌱 iFarmer</a><nav><a href="/">হোম</a><a href="/agri">কৃষি সহায়ক</a></nav></header><main class="narrow section">{body}</main><footer><b>iFarmer</b><p>কৃষির ডিজিটাল সহযাত্রী</p></footer></body></html>"""
+    return f"""<!doctype html><html lang="bn"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#176b45"><title>{title} · iFarmer</title><link rel="stylesheet" href="/static/style.css"><body><div id="google_translate_element" style="position:fixed;right:10px;top:10px;z-index:9999"></div>
+<script>function iFarmerLanguage(lang){document.cookie="googtrans=/bn/"+lang+";path=/";document.cookie="googtrans=/bn/"+lang+";path=/;domain="+location.hostname;location.reload()}function googleTranslateElementInit(){new google.translate.TranslateElement({pageLanguage:"bn",includedLanguages:"en,bn",autoDisplay:false}, "google_translate_element");}</script><script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+<header class="top"><a class="brand" href="/">🌱 iFarmer</a><nav><a href="/">হোম</a><a href="/agri">কৃষি সহায়ক</a></nav></header><main class="narrow section">{body}</main><footer><b>iFarmer</b><p>কৃষির ডিজিটাল সহযাত্রী</p></footer></body></html>"""
 
 @router.get("/agri", response_class=HTMLResponse)
 def agri_home():
