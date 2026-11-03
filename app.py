@@ -3,7 +3,7 @@ import json
 from io import BytesIO
 from openpyxl import Workbook
 import firebase_admin
-from firebase_admin import credentials, auth as firebase_auth
+from firebase_admin import credentials, auth as firebase_auth, messaging
 import psycopg
 from psycopg.rows import dict_row
 from datetime import datetime, timezone
@@ -75,6 +75,11 @@ def init_db():
         c.execute(f"""CREATE TABLE IF NOT EXISTS audit(
             id {primary_key}, actor TEXT NOT NULL, action TEXT NOT NULL,
             item_type TEXT NOT NULL, item_id INTEGER, created_at TEXT NOT NULL)""")
+        c.execute(f"""CREATE TABLE IF NOT EXISTS push_notifications(
+            id {primary_key}, title TEXT NOT NULL, message TEXT NOT NULL,
+            target TEXT NOT NULL DEFAULT 'all', sent_count INTEGER NOT NULL DEFAULT 0,
+            status TEXT NOT NULL, error TEXT DEFAULT '', created_at TEXT NOT NULL,
+            actor TEXT NOT NULL)""")
         c.execute(f"""CREATE TABLE IF NOT EXISTS partner_sites(
             id {primary_key}, partner_request_id INTEGER NOT NULL UNIQUE,
             shop_name TEXT NOT NULL, owner_name TEXT NOT NULL, phone TEXT NOT NULL,
@@ -605,6 +610,7 @@ def dashboard(request: Request):
 <div class="admin-section"><h3>পার্টনার আবেদন অনুমোদন</h3><p>পার্টনার আবেদন দেখুন এবং অনুমোদন/বাতিল/স্থগিত করুন।</p><a class="btn primary" href="/admin/partners">পার্টনার আবেদন দেখুন <span>({pending_count} অপেক্ষমাণ)</span></a></div>
 <div class="admin-section"><h3>পার্টনার সাইট ব্যবস্থাপনা</h3><p>অনুমোদিত পার্টনার সাইটের তালিকা ও অবস্থা দেখুন।</p><a class="btn primary" href="/admin/sites">সাইট পরিচালনা করুন <span>({site_count})</span></a></div>
 <div class="admin-section"><h3>কার্যকলাপ লগ</h3><p>অ্যাডমিন ও সিস্টেমের কাজের লগ পর্যালোচনা করুন।</p><a class="btn primary" href="/admin/activity">সকল কার্যকলাপ দেখুন <span>({audit_count})</span></a></div>
+<div class="admin-section"><h3>পুশ নোটিফিকেশন</h3><p>কৃষক অ্যাপে বিজ্ঞপ্তি পাঠান এবং পাঠানোর ইতিহাস দেখুন।</p><a class="btn primary" href="/admin/notifications">নোটিফিকেশন পরিচালনা</a></div>
 </div></section></main>"""
     return page("সুপার অ্যাডমিন", body)
 
@@ -890,6 +896,53 @@ def get_firebase_admin():
     except Exception:
         # Never expose credential contents or provider exception details.
         raise HTTPException(503, "Firebase সার্ভার কনফিগারেশন সঠিক নয়।")
+
+@app.get("/admin/notifications", response_class=HTMLResponse)
+def admin_notifications(request: Request):
+    if not require_admin(request):
+        return RedirectResponse("/admin", status_code=303)
+    with db() as conn:
+        rows = conn.execute("SELECT * FROM push_notifications ORDER BY id DESC LIMIT 100").fetchall()
+    history = "".join(
+        "<tr><td>"+esc(row["created_at"])+"</td><td>"+esc(row["title"])+"</td><td>"+esc(row["message"])+"</td><td>"+esc(row["target"])+"</td><td>"+esc(row["status"])+"</td><td>"+esc(row["sent_count"])+"</td></tr>"
+        for row in rows
+    )
+    body = "<main class='admin-main'><div class='admin-head'><div><div class='eyebrow'>OWNER CONTROL</div><h1>পুশ নোটিফিকেশন</h1><p>শুধু সুপার অ্যাডমিন নোটিফিকেশন পাঠাতে পারবেন।</p></div><a class='btn light' href='/admin/dashboard'>ড্যাশবোর্ডে ফিরুন</a></div>"
+    body += "<section class='admin-section'><h2>নতুন বিজ্ঞপ্তি</h2><form class='form card' method='post' action='/admin/notifications/send'>"
+    body += "<label>শিরোনাম<input name='title' maxlength='100' required></label><label>বার্তা<textarea name='message' maxlength='500' rows='4' required></textarea></label>"
+    body += "<label>প্রাপক<select name='target'><option value='all'>সব কৃষক</option></select></label><button class='btn primary' type='submit'>নোটিফিকেশন পাঠান</button>"
+    body += "<p class='fine'>Android অ্যাপ Firebase Messaging-এ নিবন্ধিত থাকতে হবে।</p></form></section>"
+    body += "<section class='admin-section'><h2>পাঠানোর ইতিহাস</h2><div class='table-wrap'><table><thead><tr><th>সময়</th><th>শিরোনাম</th><th>বার্তা</th><th>প্রাপক</th><th>অবস্থা</th><th>সাফল্য</th></tr></thead><tbody>"+(history or "<tr><td colspan='6'>এখনো কোনো বিজ্ঞপ্তি পাঠানো হয়নি।</td></tr>")+"</tbody></table></div></section></main>"
+    return page("পুশ নোটিফিকেশন", body)
+
+@app.post("/admin/notifications/send")
+def admin_send_notification(request: Request, title: str=Form(...), message: str=Form(...), target: str=Form("all")):
+    if not require_admin(request):
+        raise HTTPException(401, "অ্যাডমিন লগইন প্রয়োজন।")
+    title = clean(title, 100)
+    message = clean(message, 500)
+    if not title or not message or target != "all":
+        raise HTTPException(400, "শিরোনাম, বার্তা ও প্রাপক সঠিকভাবে দিন।")
+    status, sent_count, error = "ব্যর্থ", 0, ""
+    try:
+        get_firebase_admin()
+        messaging.send(messaging.Message(
+            notification=messaging.Notification(title=title, body=message),
+            topic="ifarmer_all",
+            data={"title": title, "body": message, "type": "admin_broadcast"}
+        ))
+        status = "Firebase-এ পাঠানো হয়েছে"
+        sent_count = 1
+    except HTTPException as exc:
+        error = str(exc.detail)
+    except Exception:
+        error = "Firebase পাঠানো ব্যর্থ। Android topic subscription যাচাই করুন।"
+    with db() as conn:
+        conn.execute(sql_placeholders("INSERT INTO push_notifications(title,message,target,sent_count,status,error,created_at,actor) VALUES(?,?,?,?,?,?,?,?)"),
+            (title, message, target, sent_count, status, error, now(), request.session.get("admin", "admin")))
+    log_action(request.session.get("admin", "admin"), "push_notification:"+status, "push_notification", None)
+    return RedirectResponse("/admin/notifications", status_code=303)
+
 
 @app.post("/api/farmer/session")
 async def create_farmer_session(request: Request):
