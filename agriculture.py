@@ -161,18 +161,39 @@ async function detectMyLocation() {{
     const lon = position.coords.longitude;
     status.textContent = 'অবস্থান শনাক্ত হয়েছে। আবহাওয়ার তথ্য আনা হচ্ছে…';
     try {{
-      let area = {{}};
+      let admin = {{}};
       try {{
-        const geo = await fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=' + encodeURIComponent(lat) + '&lon=' + encodeURIComponent(lon) + '&zoom=18&addressdetails=1&accept-language=bn');
-        if (geo.ok) {{
-          const g = await geo.json();
-          area = g.address || {{}};
-        }}
-      }} catch (e) {{ console.log('স্থানীয় ঠিকানা শনাক্ত করা যায়নি', e); }}
-      const divisionName = area.state || area.region || 'শনাক্ত হয়নি';
-      const districtName = area.county || area.state_district || area.city_district || area.district || area.city || 'শনাক্ত হয়নি';
-      const upazilaName = area.municipality || area.city || area.town || area.suburb || area.city_district || 'শনাক্ত হয়নি';
-      const unionName = area.village || area.suburb || area.neighbourhood || area.hamlet || area.quarter || area.locality || 'শনাক্ত হয়নি';
+        const base = 'https://www.arcgisbd.com/server/rest/services/ADB005/CRIIPS/MapServer';
+        const layerResponse = await fetch(base + '/layers?f=pjson');
+        if (!layerResponse.ok) throw new Error('boundary service unavailable');
+        const layerData = await layerResponse.json();
+        const layers = (layerData.layers || []).filter(layer => /division|district|upazila|union boundary/i.test(layer.name));
+        const point = JSON.stringify({{x:lon,y:lat,spatialReference:{{wkid:4326}}}});
+        const matches = await Promise.all(layers.map(async layer => {{
+          try {{
+            const q = new URLSearchParams({{f:'json',where:'1=1',geometry:point,geometryType:'esriGeometryPoint',inSR:'4326',spatialRel:'esriSpatialRelIntersects',outFields:'*',returnGeometry:'false'}});
+            const resp = await fetch(base + '/' + layer.id + '/query?' + q.toString());
+            if (!resp.ok) return null;
+            const payload = await resp.json();
+            const attrs = payload.features && payload.features[0] && payload.features[0].attributes;
+            if (!attrs) return null;
+            const values = Object.entries(attrs).filter(([k,v]) => v !== null && v !== '' && !/objectid|shape|area|length|geocode|code|fid|id$/i.test(k));
+            const name = values.find(([k,v]) => /name|union|upazila|district|division|thana|admin/i.test(k) && typeof v === 'string') || values.find(([k,v]) => typeof v === 'string');
+            return name ? {{layer:layer.name,value:name[1]}} : null;
+          }} catch(e) {{ return null; }}
+        }}));
+        matches.filter(Boolean).forEach(item => {{
+          const n = item.layer.toLowerCase();
+          if (/union/.test(n)) admin.union = item.value;
+          else if (/upazila/.test(n)) admin.upazila = item.value;
+          else if (/district/.test(n)) admin.district = item.value;
+          else if (/division/.test(n)) admin.division = item.value;
+        }});
+      }} catch (e) {{ console.log('প্রশাসনিক সীমানা থেকে অবস্থান যাচাই করা যায়নি', e); }}
+      const divisionName = admin.division || 'যাচাই করা যায়নি';
+      const districtName = admin.district || 'যাচাই করা যায়নি';
+      const upazilaName = admin.upazila || 'যাচাই করা যায়নি';
+      const unionName = admin.union || 'যাচাই করা যায়নি';
       const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon + '&current=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m&daily=precipitation_probability_max,temperature_2m_max,temperature_2m_min&timezone=Asia%2FDhaka&forecast_days=1';
       const response = await fetch(url);
       if (!response.ok) throw new Error('weather unavailable');
