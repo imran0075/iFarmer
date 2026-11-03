@@ -147,13 +147,13 @@ def page(title, body, active=""):
   <div class="splash-progress"><i></i></div>
 </div>
 <script>
-(function(){
+(function(){{
   const splash=document.getElementById('ifarmer-splash');
   if(!splash)return;
-  try{if(sessionStorage.getItem('ifarmer_splash_seen')){splash.remove();return;}sessionStorage.setItem('ifarmer_splash_seen','1');}catch(e){}
-  window.addEventListener('load',()=>{setTimeout(()=>{splash.classList.add('splash-hide');setTimeout(()=>splash.remove(),700);},1900);});
-  setTimeout(()=>{splash.classList.add('splash-hide');setTimeout(()=>splash.remove(),700);},3500);
-})();
+  try{{if(sessionStorage.getItem('ifarmer_splash_seen')){{splash.remove();return;}}sessionStorage.setItem('ifarmer_splash_seen','1');}}catch(e){{}}
+  window.addEventListener('load',()=>{{setTimeout(()=>{{splash.classList.add('splash-hide');setTimeout(()=>splash.remove(),700);}},1900);}});
+  setTimeout(()=>{{splash.classList.add('splash-hide');setTimeout(()=>splash.remove(),700);}},3500);
+}})();
 </script>
 <header class="top"><a class="brand" href="/"><span class="logo">🌱</span><span>iFarmer</span></a>
 <nav><a href="/#products">পণ্য</a><a href="/#order">অর্ডার</a><a href="/track-order">অর্ডার ট্র্যাক</a><a href="/partner">পার্টনার হোন</a><a href="/partner/login">পার্টনার লগইন</a><a href="/agri">কৃষি সহায়ক</a><a href="/agri/category/fish">মৎস্য ও প্রাণিসম্পদ</a></nav></header>
