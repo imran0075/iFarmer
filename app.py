@@ -944,6 +944,48 @@ def admin_send_notification(request: Request, title: str=Form(...), message: str
     return RedirectResponse("/admin/notifications", status_code=303)
 
 
+@app.post("/api/notifications/daily-weather")
+def daily_weather_notification(request: Request):
+    expected = os.getenv("WEATHER_PUSH_SECRET", "").strip()
+    supplied = request.headers.get("X-Weather-Secret", "").strip()
+    if not expected or not hmac.compare_digest(expected, supplied):
+        raise HTTPException(403, "অনুমোদিত নয়।")
+    try:
+        from urllib.request import urlopen
+        from urllib.parse import urlencode
+        params = urlencode({
+            "latitude": 23.8103, "longitude": 90.4125,
+            "daily": "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
+            "timezone": "Asia/Dhaka", "forecast_days": 1
+        })
+        with urlopen("https://api.open-meteo.com/v1/forecast?" + params, timeout=15) as response:
+            forecast = json.loads(response.read().decode("utf-8"))
+        daily = forecast.get("daily", {})
+        if not daily.get("time"):
+            raise ValueError("আবহাওয়ার তথ্য পাওয়া যায়নি")
+        hi = daily.get("temperature_2m_max", [None])[0]
+        lo = daily.get("temperature_2m_min", [None])[0]
+        rain = daily.get("precipitation_probability_max", [None])[0]
+        code = daily.get("weather_code", [None])[0]
+        desc = "বৃষ্টি বা মেঘলা আবহাওয়া" if code in [51,53,55,61,63,65,80,81,82,95,96,99] else "আংশিক মেঘলা/শুষ্ক আবহাওয়া"
+        parts = [desc]
+        if lo is not None and hi is not None:
+            parts.append(f"তাপমাত্রা {lo}°–{hi}°C")
+        if rain is not None:
+            parts.append(f"বৃষ্টির সম্ভাবনা {rain}%")
+        message = "আজকের কৃষি আবহাওয়া (ঢাকা-ভিত্তিক): " + "। ".join(parts) + "। স্থানীয় আবহাওয়া ভিন্ন হতে পারে।"
+        get_firebase_admin()
+        msg_id = messaging.send(messaging.Message(
+            notification=messaging.Notification(title="iFarmer | দৈনিক আবহাওয়া", body=message),
+            topic="ifarmer_all",
+            data={"type":"daily_weather","body":message}
+        ))
+        return {"ok": True, "message_id": msg_id, "message": message}
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(502, "আবহাওয়ার নোটিফিকেশন পাঠানো যায়নি।")
+
 @app.post("/api/farmer/session")
 async def create_farmer_session(request: Request):
     get_firebase_admin()
