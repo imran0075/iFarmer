@@ -1,0 +1,19 @@
+name: Daily iFarmer Weather Push
+
+on:
+  schedule:
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+
+jobs:
+  send-weather:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send daily weather notification
+        env:
+          WEATHER_PUSH_SECRET: ${{ secrets.WEATHER_PUSH_SECRET }}
+        run: |
+          test -n "$WEATHER_PUSH_SECRET" || (echo "Add WEATHER_PUSH_SECRET in GitHub Actions secrets" && exit 1)
+          curl --fail --silent --show-error --request POST \
+            --header "X-Weather-Secret: $WEATHER_PUSH_SECRET" \
+            https://ifarmer.onrender.com/api/notifications/daily-weather
