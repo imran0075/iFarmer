@@ -140,3 +140,63 @@ footer{padding:42px 20px;background:linear-gradient(135deg,#0d3826,#145b39)}
  .quick-actions b{font-size:12px}
  .quick-actions small{font-size:10px}
 }
+
+
+/* iFarmer Signature Edition — elevated visual system */
+:root{--green:#087b43;--dark:#102f22;--muted:#66796d;--line:#e1ebe4;--pale:#edf8f0}
+html{scroll-behavior:smooth}
+body{font-family:system-ui,-apple-system,"Noto Sans Bengali",sans-serif;background:radial-gradient(ellipse at 10% 0%,#e8f5eb 0,transparent 32%),#f7faf7;color:var(--dark)}
+.top{position:sticky;top:0;z-index:25;display:flex;align-items:center;flex-direction:row;justify-content:space-between;padding-left:max(20px,calc((100% - 1180px)/2));padding-right:max(20px,calc((100% - 1180px)/2));}
+.top nav{gap:20px}
+.top nav a{font-weight:700;color:#365a45;transition:color .15s}
+.top nav a:hover{color:#078344}
+main{max-width:1180px;margin:0 auto}
+main>section:not(.hero){animation:fade-up .45s ease both}
+@keyframes fade-up{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
+.home-hero{margin-top:30px;border:1px solid #dceee0;box-shadow:0 24px 65px #17472a12;min-height:430px}
+.home-hero:before{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 55%,#ffffff30);pointer-events:none;z-index:-1}
+.home-hero .pill{display:inline-flex;align-self:flex-start;padding:9px 15px;border-radius:99px;background:#d5efdc;color:#087b43;font-weight:800}
+.home-hero h1{font-size:clamp(43px,6vw,70px);line-height:1.13;letter-spacing:-1.8px;margin:22px 0 14px}
+.home-hero h1 span{color:#078344}
+.home-hero .hero-copy>p{font-size:17px;line-height:1.95;color:#587263}
+.hero-art{border-radius:28px;background:radial-gradient(circle at 50% 48%,#ffffff9c,transparent 68%)}
+.art-sun{background:linear-gradient(145deg,#d2f19e,#a7ddb5);border:1px solid #ffffffa8}
+.art-leaf{filter:drop-shadow(0 22px 18px #214e2d30)}
+.quick-actions{margin-top:18px}
+.quick-actions a{min-height:88px;border-color:#e5eee7;box-shadow:0 9px 26px #153d2709}
+.quick-actions a span{background:linear-gradient(145deg,#e5f7e9,#f3faf4);box-shadow:inset 0 0 0 1px #dcefe1}
+.section-head{align-items:center}
+.eyebrow{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#13834a;font-weight:900}
+.section-head h2{font-size:clamp(25px,3vw,34px);letter-spacing:-.8px}
+.section-head p{font-size:14px}
+.cards{grid-template-columns:repeat(3,minmax(0,1fr))}
+.card{background:linear-gradient(160deg,#fff,#fcfefc);border-color:#e4eee6;box-shadow:0 10px 30px #143b2b09}
+.card:hover{border-color:#c8e5d0;transform:translateY(-5px)}
+.card-icon{box-shadow:inset 0 0 0 1px #dcefe1}
+.product-photo{height:215px;border:1px solid #edf2ee}
+#products .card h3{font-size:18px;min-height:48px}
+#products .card>p:first-of-type{color:#087b43;font-size:17px;font-weight:900}
+.partner-banner{position:relative;overflow:hidden;border:1px solid #207c4b;box-shadow:0 18px 42px #075b3222}
+.partner-banner:after{content:"🌱";position:absolute;right:7%;top:-30px;font-size:145px;opacity:.11;pointer-events:none}
+.partner-banner>*{position:relative;z-index:1}
+.btn{letter-spacing:.1px}
+.primary{background:linear-gradient(135deg,#0b984e,#075c35)}
+.light{color:#087b43}
+footer{margin-top:42px}
+.mobile-dock a{min-height:43px}
+@media(max-width:700px){
+ .top{position:relative;display:flex;flex-direction:column;align-items:flex-start;padding:10px 16px}
+ .top nav{gap:15px}
+ main{width:100%}
+ .home-hero{margin-top:15px;border-radius:22px;box-shadow:0 15px 38px #17472a12}
+ .home-hero h1{font-size:clamp(38px,10vw,49px);letter-spacing:-1px;margin:16px 0 10px}
+ .home-hero .hero-copy>p{font-size:14px;line-height:1.8}
+ .hero-art{border-radius:20px}
+ .quick-actions a{min-height:76px}
+ .section-head h2{font-size:25px}
+ .cards{grid-template-columns:1fr}
+ .product-photo{height:225px}
+ .partner-banner:after{right:-5px;top:8px;font-size:100px}
+}
+@media(min-width:701px) and (max-width:980px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.top nav{gap:12px;font-size:12px}}
+@media(prefers-reduced-motion:reduce){main>section:not(.hero){animation:none}}
