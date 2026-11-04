@@ -155,8 +155,47 @@ def page(title, body, active=""):
   setTimeout(()=>{{splash.classList.add('splash-hide');setTimeout(()=>splash.remove(),700);}},7500);
 }})();
 </script>
-<div id="google_translate_element" style="position:fixed;right:10px;top:10px;z-index:9999"></div>
-<script>function googleTranslateElementInit(){{new google.translate.TranslateElement({{pageLanguage:"bn",includedLanguages:"en,bn",autoDisplay:false}}, "google_translate_element");}}</script><script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+<div id="google_translate_element" style="display:none"></div>
+<div class="language-switch" role="group" aria-label="Choose language"><button type="button" data-ifarmer-lang="en">ENG</button><span>|</span><button type="button" data-ifarmer-lang="bn">BAN</button></div>
+<style>
+.language-switch{{position:fixed;right:12px;top:12px;z-index:10001;display:flex;align-items:center;gap:5px;padding:6px 9px;background:#fff;border:1px solid #dce8df;border-radius:22px;box-shadow:0 3px 12px #0002;font:600 12px Arial,sans-serif}}
+.language-switch button{{border:0;background:transparent;color:#176b45;padding:5px 7px;border-radius:15px;font-weight:700;cursor:pointer}}
+.language-switch button.active{{background:#176b45;color:#fff}}
+body{{padding-top:0}}
+</style>
+<script>
+(function(){{
+  function setActive(lang){{
+    document.querySelectorAll('[data-ifarmer-lang]').forEach(function(b){{b.classList.toggle('active',b.getAttribute('data-ifarmer-lang')===lang);}});
+  }}
+  function chooseGoogleLanguage(lang,attempt){{
+    var combo=document.querySelector('.goog-te-combo');
+    if(combo){{
+      combo.value=lang;
+      combo.dispatchEvent(new Event('change',{{bubbles:true}}));
+      setActive(lang);
+      try{{localStorage.setItem('ifarmer_language',lang);}}catch(e){{}}
+      return;
+    }}
+    if(attempt<30)setTimeout(function(){{chooseGoogleLanguage(lang,attempt+1);}},300);
+  }}
+  document.addEventListener('click',function(e){{
+    var btn=e.target.closest('[data-ifarmer-lang]');
+    if(!btn)return;
+    chooseGoogleLanguage(btn.getAttribute('data-ifarmer-lang'),0);
+  }});
+  var saved='en';
+  try{{saved=localStorage.getItem('ifarmer_language')||'en';}}catch(e){{}}
+  setActive(saved);
+  window.googleTranslateElementInit=function(){{
+    new google.translate.TranslateElement({{pageLanguage:'bn',includedLanguages:'en,bn',autoDisplay:false}},'google_translate_element');
+    chooseGoogleLanguage(saved,0);
+  }};
+  var script=document.createElement('script');
+  script.src='https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+  script.async=true;document.head.appendChild(script);
+}})();
+</script>
 <header class="top"><a class="brand" href="/"><span class="logo">🌱</span><span>iFarmer</span></a>
 <nav><a href="/#products">পণ্য</a><a href="/#order">অর্ডার</a><a href="/track-order">অর্ডার ট্র্যাক</a><a href="/partner">পার্টনার হোন</a><a href="/partner/login">পার্টনার লগইন</a><a href="/agri">কৃষি সহায়ক</a><a href="/agri/category/fish">মৎস্য ও প্রাণিসম্পদ</a></nav></header>
 {body}
