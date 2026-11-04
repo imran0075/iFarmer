@@ -201,17 +201,17 @@ body{{padding-top:0}}
 
 <script>
 (function(){{
-  function setupNativeShare(){{
-    if(!window.iFarmerNative || !window.iFarmerNative.shareApp || document.getElementById('ifarmer-share-app')) return;
-    var b=document.createElement('button');
-    b.id='ifarmer-share-app'; b.type='button'; b.textContent='↗ শেয়ার';
-    b.setAttribute('aria-label','iFarmer অ্যাপ শেয়ার করুন');
-    b.style.cssText='position:fixed;left:50%;transform:translateX(-50%);top:58px;z-index:10002;border:0;border-radius:18px;padding:6px 12px;background:#176b45;color:#fff;font-weight:700;font-size:12px;box-shadow:0 2px 8px #0002';
-    b.onclick=function(){{window.iFarmerNative.shareApp();}};
-    document.body.appendChild(b);
-  }}
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',setupNativeShare); else setupNativeShare();
-  setTimeout(setupNativeShare,500);
+ function setupNativeShare(){{
+  var brand=document.querySelector('header.top .brand');
+  if(!window.iFarmerNative||!window.iFarmerNative.shareApp||!brand||document.getElementById('ifarmer-share-app'))return;
+  var b=document.createElement('button');b.id='ifarmer-share-app';b.type='button';b.textContent='↗ শেয়ার';
+  b.setAttribute('aria-label','iFarmer অ্যাপ শেয়ার করুন');
+  b.style.cssText='display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;margin:0 10px;padding:6px 11px;border:0;border-radius:18px;background:#176b45;color:#fff;font-weight:700;font-size:12px;vertical-align:middle';
+  b.onclick=function(){{window.iFarmerNative.shareApp();}};
+  brand.insertAdjacentElement('afterend',b);
+ }}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setupNativeShare);else setupNativeShare();
+ setTimeout(setupNativeShare,500);
 }})();
 </script>
 <header class="top"><a class="brand" href="/"><span class="logo">🌱</span><span>iFarmer</span></a>
