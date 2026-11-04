@@ -105,7 +105,6 @@ public class MainActivity extends Activity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
-                view.evaluateJavascript("(function(){if(document.getElementById('ifarmer-share-app'))return;var b=document.createElement('button');b.id='ifarmer-share-app';b.type='button';b.textContent='↗ অ্যাপ শেয়ার করুন';b.setAttribute('aria-label','iFarmer অ্যাপ শেয়ার করুন');b.style.cssText='position:fixed;right:14px;bottom:78px;z-index:99999;border:0;border-radius:24px;padding:12px 17px;background:#176b45;color:white;font-weight:700;font-size:14px;box-shadow:0 4px 14px #0003';b.onclick=function(){if(window.iFarmerNative&&window.iFarmerNative.shareApp){window.iFarmerNative.shareApp()}else if(navigator.share){navigator.share({title:'iFarmer অ্যাপ',text:'কৃষির ডিজিটাল সহযাত্রী iFarmer অ্যাপ ডাউনলোড করুন',url:'https://ifarmer.onrender.com/static/download.html'}).catch(function(){})}};document.body.appendChild(b)})()", null);
             }
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
@@ -131,15 +130,17 @@ public class MainActivity extends Activity {
         root.addView(webView, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         Button shareButton = new Button(this);
-        shareButton.setText("↗ অ্যাপ শেয়ার করুন");
+        shareButton.setText("↗ শেয়ার");
         shareButton.setAllCaps(false);
         shareButton.setTextColor(Color.WHITE);
+        shareButton.setTextSize(11);
+        shareButton.setPadding(10, 2, 10, 2);
         shareButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(23, 107, 69)));
         shareButton.setOnClickListener(v -> shareApp());
         FrameLayout.LayoutParams shareParams = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
-                Gravity.BOTTOM | Gravity.END);
-        shareParams.setMargins(0, 0, 28, 90);
+                Gravity.TOP | Gravity.END);
+        shareParams.setMargins(0, 58, 10, 0);
         root.addView(shareButton, shareParams);
         setContentView(root);
         if (savedInstanceState == null) webView.loadUrl(HOME);
