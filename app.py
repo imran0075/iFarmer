@@ -250,6 +250,11 @@ def home(request: Request):
 <p>কৃষি পণ্য খুঁজুন, এলাকার আবহাওয়া জানুন এবং প্রয়োজনীয় কৃষি সহায়তা নিন—সব এক জায়গায়।</p>
 <div class="actions"><a class="btn primary" href="#products">🛒 পণ্য কিনুন</a><a class="btn light" href="/agri">কৃষি সহায়তা নিন →</a></div>
 <div class="hero-trust">✓ সহজ অর্ডার <i>·</i> ✓ ফোনে নিশ্চিতকরণ <i>·</i> ✓ স্থানীয় পার্টনার</div></div>
+<section class="section" aria-label="iFarmer Android অ্যাপ ডাউনলোড">
+<div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;background:#eff8f1;border:1px solid #cfe5d4">
+<div><div class="eyebrow">📱 Android অ্যাপ</div><h2 style="margin:6px 0">মোবাইলে ব্যবহার করুন iFarmer</h2><p style="margin:0">দ্রুত কৃষি সহায়তা পেতে iFarmer অ্যাপ ডাউনলোড ও ইনস্টল করুন।</p></div>
+<a class="btn primary" href="/static/download.html">⬇️ অ্যাপ ডাউনলোড করুন</a>
+</div></section>
 <div class="hero-art" aria-hidden="true"><div class="art-sun"></div><div class="art-leaf">🌾</div><div class="art-tag">iFarmer<br><small>Grow smarter</small></div></div>
 </section>
 <section class="quick-actions" aria-label="দ্রুত সেবা">
