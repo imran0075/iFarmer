@@ -12,6 +12,7 @@ import android.webkit.GeolocationPermissions;
 import android.webkit.ValueCallback;
 import android.net.Uri;
 import android.content.Intent;
+import android.content.ClipData;
 import android.content.pm.PackageManager;
 import android.provider.MediaStore;
 import android.graphics.Color;
@@ -32,12 +33,14 @@ public class MainActivity extends Activity {
     private static final int LOCATION_PERMISSION_REQUEST = 4101;
     private static final int FILE_CHOOSER_REQUEST = 4102;
     private static final int NOTIFICATION_PERMISSION_REQUEST = 4103;
+    private static final int CAMERA_PERMISSION_REQUEST = 4104;
 
     private WebView webView;
     private ValueCallback<Uri[]> filePathCallback;
     private Uri cameraPhotoUri;
     private GeolocationPermissions.Callback pendingGeoCallback;
     private String pendingGeoOrigin;
+    private boolean pendingCameraChooser;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,7 +74,13 @@ public class MainActivity extends Activity {
                     ValueCallback<Uri[]> callback, FileChooserParams params) {
                 if (filePathCallback != null) filePathCallback.onReceiveValue(null);
                 filePathCallback = callback;
-                openImagePicker();
+                if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA)
+                        == PackageManager.PERMISSION_GRANTED) {
+                    openImagePicker(true);
+                } else {
+                    pendingCameraChooser = true;
+                    requestPermissions(new String[] { Manifest.permission.CAMERA }, CAMERA_PERMISSION_REQUEST);
+                }
                 return true;
             }
         });
@@ -128,13 +137,14 @@ public class MainActivity extends Activity {
         }, LOCATION_PERMISSION_REQUEST);
     }
 
-    private void openImagePicker() {
+    private void openImagePicker(boolean includeCamera) {
         Intent galleryIntent = new Intent(Intent.ACTION_GET_CONTENT);
         galleryIntent.setType("image/*");
         galleryIntent.addCategory(Intent.CATEGORY_OPENABLE);
 
         Intent cameraIntent = null;
         try {
+            if (!includeCamera) throw new SecurityException("Camera permission not granted");
             File cameraDir = new File(getCacheDir(), "camera");
             if (!cameraDir.exists()) cameraDir.mkdirs();
             String fileName = "ifarmer_" +
@@ -147,6 +157,7 @@ public class MainActivity extends Activity {
             cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, cameraPhotoUri);
             cameraIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
                     | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+            cameraIntent.setClipData(ClipData.newUri(getContentResolver(), "iFarmer camera photo", cameraPhotoUri));
         } catch (Exception e) {
             cameraPhotoUri = null;
         }
@@ -154,6 +165,8 @@ public class MainActivity extends Activity {
         Intent chooser = Intent.createChooser(galleryIntent, "ছবি নির্বাচন করুন");
         if (cameraIntent != null) {
             chooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[] { cameraIntent });
+            chooser.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+            chooser.setClipData(ClipData.newUri(getContentResolver(), "iFarmer camera photo", cameraPhotoUri));
         }
         try {
             startActivityForResult(chooser, FILE_CHOOSER_REQUEST);
@@ -183,6 +196,15 @@ public class MainActivity extends Activity {
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == CAMERA_PERMISSION_REQUEST && pendingCameraChooser) {
+            pendingCameraChooser = false;
+            boolean cameraGranted = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                    == PackageManager.PERMISSION_GRANTED;
+            openImagePicker(cameraGranted);
+            if (!cameraGranted) {
+                Toast.makeText(this, "ক্যামেরার অনুমতি না দিলে গ্যালারি থেকে ছবি নিতে পারবেন", Toast.LENGTH_LONG).show();
+            }
+        }
         if (requestCode == LOCATION_PERMISSION_REQUEST && pendingGeoCallback != null) {
             boolean granted = hasLocationPermission();
             pendingGeoCallback.invoke(pendingGeoOrigin, granted, false);
