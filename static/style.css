@@ -562,3 +562,26 @@ main{max-width:1200px}
     animation:none !important;
   }
 }
+
+
+/* Refined original iFarmer brand mark — preserve header position */
+.top .brand{
+  display:flex;align-items:center;gap:10px;
+  color:#176b45;font-size:26px;font-weight:950;
+  letter-spacing:-1.1px;text-decoration:none;
+}
+.top .brand .logo{
+  width:44px;height:44px;flex:0 0 44px;
+  display:grid;place-items:center;
+  border-radius:14px;
+  background:linear-gradient(145deg,#238653 0%,#105b39 100%);
+  color:#fff;font-size:25px;line-height:1;
+  border:1px solid #ffffff80;
+  box-shadow:0 5px 14px #145b3930,inset 0 1px 1px #ffffff55;
+  animation:ifarmer-logo-breathe 4.5s ease-in-out infinite;
+}
+.top .brand:hover .logo{filter:brightness(1.06)}
+@media(max-width:700px){
+  .top .brand{gap:9px;font-size:23px}
+  .top .brand .logo{width:42px;height:42px;flex-basis:42px}
+}
