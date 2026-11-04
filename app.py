@@ -222,7 +222,7 @@ body{{padding-top:0}}
     header.style.justifyContent='flex-start';header.style.flexWrap='nowrap';
     header.style.gap='6px';header.style.width='100%';
   }}
-  var nav=header&&header.querySelector('nav');if(nav)nav.style.display='none';
+  var nav=header&&header.querySelector('nav');if(nav)nav.style.display='';
  }}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setupNativeShare);else setupNativeShare();
  setTimeout(setupNativeShare,500);
