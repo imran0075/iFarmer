@@ -1,6 +1,7 @@
 package bd.ifarmer.app;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.os.Bundle;
 import android.os.Build;
 import android.Manifest;
@@ -16,6 +17,7 @@ import android.content.Intent;
 import android.content.ClipData;
 import android.content.pm.PackageManager;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.graphics.Color;
 import android.view.View;
 import android.widget.Toast;
@@ -316,7 +318,20 @@ public class MainActivity extends Activity {
             }
             if (!granted) {
                 sendLocationError("permission");
-                Toast.makeText(this, "iFarmer-এর লোকেশন চালু করতে Location permission দিন", Toast.LENGTH_LONG).show();
+                new AlertDialog.Builder(this)
+                        .setTitle("iFarmer Location Permission")
+                        .setMessage("স্বয়ংক্রিয়ভাবে বিভাগ, জেলা ও ইউনিয়ন শনাক্ত করতে Location permission প্রয়োজন। Settings থেকে অনুমতি চালু করুন।")
+                        .setPositiveButton("Settings খুলুন", (dialog, which) -> {
+                            Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                    Uri.parse("package:" + getPackageName()));
+                            startActivity(intent);
+                        })
+                        .setNegativeButton("পরে", null)
+                        .show();
+            } else if (pendingNativeCallback != null) {
+                String cb = pendingNativeCallback;
+                pendingNativeCallback = null;
+                getCurrentLocation(cb);
             }
             requestNotificationPermission();
         }
