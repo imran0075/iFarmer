@@ -207,9 +207,9 @@ body{{padding-top:0}}
   b.setAttribute('aria-label','iFarmer অ্যাপ শেয়ার করুন');
   b.style.cssText='display:flex;align-items:center;justify-content:center;white-space:nowrap;margin:28px auto 18px;padding:11px 22px;border:0;border-radius:22px;background:linear-gradient(135deg,#218052,#125b3a);color:#fff;font-weight:750;font-size:14px;box-shadow:0 4px 12px #176b4528;z-index:12';
   b.onclick=function(){{window.iFarmerNative.shareApp();}};
-  var brand=document.querySelector('header.top .brand');
-  if(!brand)return;
-  brand.parentNode.insertBefore(b,brand);
+  var footer=document.querySelector('footer');
+  if(!footer)return;
+  footer.parentNode.insertBefore(b,footer);
  }}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setupNativeShare);else setupNativeShare();
  setTimeout(setupNativeShare,500);
