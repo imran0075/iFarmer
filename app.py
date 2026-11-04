@@ -198,21 +198,7 @@ body{{padding-top:0}}
   script.async=true;document.head.appendChild(script);
 }})();
 </script>
-<script>
-(function(){{
-  function addAppShare(){{
-    if(!window.iFarmerNative || !window.iFarmerNative.shareApp || document.getElementById('ifarmer-share-app')) return;
-    var b=document.createElement('button');
-    b.id='ifarmer-share-app'; b.type='button'; b.textContent='↗ শেয়ার';
-    b.setAttribute('aria-label','iFarmer অ্যাপ শেয়ার করুন');
-    b.style.cssText='position:fixed;right:12px;top:58px;z-index:10002;border:0;border-radius:18px;padding:6px 10px;background:#176b45;color:#fff;font-weight:700;font-size:11px;box-shadow:0 2px 8px #0002';
-    b.onclick=function(){{window.iFarmerNative.shareApp();}};
-    document.body.appendChild(b);
-  }}
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',addAppShare); else addAppShare();
-  setTimeout(addAppShare,500);
-}})();
-</script>
+
 <header class="top"><a class="brand" href="/"><span class="logo">🌱</span><span>iFarmer</span></a>
 <nav><a href="/#products">পণ্য</a><a href="/#order">অর্ডার</a><a href="/track-order">অর্ডার ট্র্যাক</a><a href="/partner">পার্টনার হোন</a><a href="/partner/login">পার্টনার লগইন</a><a href="/agri">কৃষি সহায়ক</a><a href="/agri/category/fish">মৎস্য ও প্রাণিসম্পদ</a></nav></header>
 {body}
@@ -265,9 +251,7 @@ def home(request: Request):
 <p>কৃষি পণ্য খুঁজুন, এলাকার আবহাওয়া জানুন এবং প্রয়োজনীয় কৃষি সহায়তা নিন—সব এক জায়গায়।</p>
 <div class="actions"><a class="btn primary" href="#products">🛒 পণ্য কিনুন</a><a class="btn light" href="/agri">কৃষি সহায়তা নিন →</a></div>
 <div class="hero-trust">✓ সহজ অর্ডার <i>·</i> ✓ ফোনে নিশ্চিতকরণ <i>·</i> ✓ স্থানীয় পার্টনার</div></div>
-<section class="section" aria-label="iFarmer Android অ্যাপ ইনস্টল">
-<a class="btn primary" style="display:block;text-align:center;max-width:320px;margin:0 auto" href="https://github.com/imran0075/iFarmer/releases/latest/download/iFarmer.apk" download>অ্যাপ ইনস্টল করুন</a>
-</section>
+
 <div class="hero-art" aria-hidden="true"><div class="art-sun"></div><div class="art-leaf">🌾</div><div class="art-tag">iFarmer<br><small>Grow smarter</small></div></div>
 </section>
 <section class="quick-actions" aria-label="দ্রুত সেবা">
