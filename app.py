@@ -198,6 +198,21 @@ body{{padding-top:0}}
   script.async=true;document.head.appendChild(script);
 }})();
 </script>
+<script>
+(function(){
+  function addAppShare(){
+    if(!window.iFarmerNative || !window.iFarmerNative.shareApp || document.getElementById('ifarmer-share-app')) return;
+    var b=document.createElement('button');
+    b.id='ifarmer-share-app'; b.type='button'; b.textContent='↗ শেয়ার';
+    b.setAttribute('aria-label','iFarmer অ্যাপ শেয়ার করুন');
+    b.style.cssText='position:fixed;right:12px;top:58px;z-index:10002;border:0;border-radius:18px;padding:6px 10px;background:#176b45;color:#fff;font-weight:700;font-size:11px;box-shadow:0 2px 8px #0002';
+    b.onclick=function(){window.iFarmerNative.shareApp();};
+    document.body.appendChild(b);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',addAppShare); else addAppShare();
+  setTimeout(addAppShare,500);
+})();
+</script>
 <header class="top"><a class="brand" href="/"><span class="logo">🌱</span><span>iFarmer</span></a>
 <nav><a href="/#products">পণ্য</a><a href="/#order">অর্ডার</a><a href="/track-order">অর্ডার ট্র্যাক</a><a href="/partner">পার্টনার হোন</a><a href="/partner/login">পার্টনার লগইন</a><a href="/agri">কৃষি সহায়ক</a><a href="/agri/category/fish">মৎস্য ও প্রাণিসম্পদ</a></nav></header>
 {body}
