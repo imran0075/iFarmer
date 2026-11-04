@@ -288,24 +288,21 @@ def disease_guide(category: str = "crop", q: str = ""):
 @router.get("/agri/diagnose", response_class=HTMLResponse)
 def diagnose_form():
     return shell("AI রোগ শনাক্তকরণ", """<h1>📷 AI ফসলের রোগ শনাক্তকরণ</h1>
-    <p>নিচের ক্যামেরা বাটনে চাপ দিয়ে গাছের আক্রান্ত অংশের ছবি তুলুন। চাইলে গ্যালারি থেকেও ছবি নিতে পারবেন।</p>
+    <p>শুধু ক্যামেরা দিয়ে আক্রান্ত গাছের ছবি তুলুন। গ্যালারি বা ফাইল আপলোডের কোনো অপশন নেই।</p>
     <form id="ai-diagnose-form" class="form card" method="post" enctype="multipart/form-data">
     <label>ক্যামেরা দিয়ে ছবি তুলুন
     <input id="ai-camera" type="file" name="photo" accept="image/*" capture="environment" required></label>
-    <label>অথবা গ্যালারি থেকে ছবি নিন
-    <input id="ai-gallery" type="file" accept="image/jpeg,image/png,image/webp"></label>
-    <div id="ai-preview" style="display:none;margin:12px 0"><img id="ai-preview-img" alt="আপলোডের জন্য নির্বাচিত ছবি" style="max-width:100%;max-height:320px;object-fit:contain;border-radius:12px"></div>
+    <div id="ai-preview" style="display:none;margin:12px 0"><img id="ai-preview-img" alt="ক্যামেরায় তোলা ছবির প্রিভিউ" style="max-width:100%;max-height:320px;object-fit:contain;border-radius:12px"></div>
     <button id="ai-submit" class="btn primary" type="submit">ছবি বিশ্লেষণ করুন</button>
     <p id="ai-status" role="status" aria-live="polite"></p></form>
     <script>
     (function(){
-      const form=document.getElementById('ai-diagnose-form'), cam=document.getElementById('ai-camera'), gal=document.getElementById('ai-gallery'), preview=document.getElementById('ai-preview'), img=document.getElementById('ai-preview-img'), status=document.getElementById('ai-status'), btn=document.getElementById('ai-submit');
-      function choose(file,input){if(!file)return;const dt=new DataTransfer();dt.items.add(file);cam.files=dt.files;gal.value='';preview.style.display='block';img.src=URL.createObjectURL(file);status.textContent='ছবি প্রস্তুত। বিশ্লেষণ করতে বাটনে চাপ দিন।';}
-      cam.addEventListener('change',()=>choose(cam.files[0],cam));gal.addEventListener('change',()=>{if(gal.files[0])choose(gal.files[0],gal);});
-      form.addEventListener('submit',()=>{if(!cam.files.length){status.textContent='আগে একটি ছবি তুলুন বা নির্বাচন করুন।';return;}btn.disabled=true;btn.textContent='AI ছবি বিশ্লেষণ করছে…';status.textContent='ছবি আপলোড হচ্ছে। অনুগ্রহ করে অপেক্ষা করুন; ১ মিনিট পর্যন্ত লাগতে পারে।';});
+      const form=document.getElementById('ai-diagnose-form'), cam=document.getElementById('ai-camera'), preview=document.getElementById('ai-preview'), img=document.getElementById('ai-preview-img'), status=document.getElementById('ai-status'), btn=document.getElementById('ai-submit');
+      cam.addEventListener('change',()=>{const file=cam.files&&cam.files[0];if(!file)return;preview.style.display='block';img.src=URL.createObjectURL(file);status.textContent='ছবি প্রস্তুত। বিশ্লেষণ করতে বাটনে চাপ দিন।';});
+      form.addEventListener('submit',()=>{if(!cam.files.length){status.textContent='আগে ক্যামেরা দিয়ে ছবি তুলুন।';return;}btn.disabled=true;btn.textContent='AI ছবি বিশ্লেষণ করছে…';status.textContent='ছবি বিশ্লেষণ হচ্ছে। অনুগ্রহ করে অপেক্ষা করুন; ১ মিনিট পর্যন্ত লাগতে পারে।';});
     })();
     </script>
-    <p class="fine">কোনো ফসল, জেলা বা লক্ষণ নির্বাচন/লেখার প্রয়োজন নেই। ছবি জমা দিলেই AI নিজে ফসল ও সম্ভাব্য সমস্যা শনাক্ত করবে। ফ্রি ব্যবহারের সীমা শেষ হলে কোনো পেইড চার্জ ছাড়াই সেবা সাময়িক বন্ধ থাকবে। AI-এর ফলাফল সম্ভাব্য মূল্যায়ন, নিশ্চিত রোগনির্ণয় নয়।</p>""")
+    <p class="fine">কোনো ফসল, জেলা বা লক্ষণ লিখতে হবে না। AI ছবির দৃশ্যমান তথ্য থেকে সম্ভাব্য ফসল, রোগ/পোকা ও ব্যবস্থাপনা শনাক্ত করবে। প্রয়োজন হলে কীটনাশকের সক্রিয় উপাদান জানাবে; নিবন্ধন ও লেবেল যাচাই ছাড়া ব্র্যান্ড বা ডোজ অনুমান করবে না। AI-এর ফলাফল সম্ভাব্য মূল্যায়ন, নিশ্চিত রোগনির্ণয় নয়।</p>""")
 
 @router.post("/agri/diagnose", response_class=HTMLResponse)
 async def diagnose_submit(photo: UploadFile=File(...)):
