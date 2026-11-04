@@ -23,6 +23,10 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.view.Gravity;
 import android.view.ViewGroup;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.os.Looper;
 import com.google.firebase.messaging.FirebaseMessaging;
 
 import androidx.core.content.ContextCompat;
@@ -47,6 +51,69 @@ public class MainActivity extends Activity {
     private String pendingGeoOrigin;
     private boolean pendingCameraChooser;
     private boolean locationPermissionRequestActive;
+    private LocationManager locationManager;
+    private LocationListener nativeLocationListener;
+    private String pendingNativeCallback;
+
+    @JavascriptInterface
+    public void getCurrentLocation(String callbackName) {
+        pendingNativeCallback = callbackName;
+        runOnUiThread(() -> {
+            if (!hasLocationPermission()) {
+                requestLocationPermission();
+                sendLocationError("permission");
+                return;
+            }
+            try {
+                locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+                boolean gps = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+                boolean network = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+                if (!gps && !network) { sendLocationError("gps_off"); return; }
+                Location best = null;
+                if (gps) best = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                if (best == null && network) best = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+                if (best != null && System.currentTimeMillis() - best.getTime() < 120000) {
+                    sendLocationSuccess(best);
+                    return;
+                }
+                if (nativeLocationListener != null) locationManager.removeUpdates(nativeLocationListener);
+                nativeLocationListener = new LocationListener() {
+                    @Override public void onLocationChanged(Location location) {
+                        locationManager.removeUpdates(this);
+                        nativeLocationListener = null;
+                        sendLocationSuccess(location);
+                    }
+                    @Override public void onProviderDisabled(String provider) {}
+                    @Override public void onProviderEnabled(String provider) {}
+                    @Override public void onStatusChanged(String provider, int status, android.os.Bundle extras) {}
+                };
+                if (gps) locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000L, 0f, nativeLocationListener, Looper.getMainLooper());
+                if (network) locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000L, 0f, nativeLocationListener, Looper.getMainLooper());
+                webView.postDelayed(() -> {
+                    if (nativeLocationListener != null) {
+                        locationManager.removeUpdates(nativeLocationListener);
+                        nativeLocationListener = null;
+                        sendLocationError("timeout");
+                    }
+                }, 25000);
+            } catch (SecurityException e) { sendLocationError("permission"); }
+              catch (Exception e) { sendLocationError("unavailable"); }
+        });
+    }
+
+    private void sendLocationSuccess(Location location) {
+        if (location == null || webView == null) return;
+        String js = "window.iFarmerLocationSuccess && window.iFarmerLocationSuccess("
+                + location.getLatitude() + "," + location.getLongitude() + "," + location.getAccuracy() + ")";
+        webView.post(() -> webView.evaluateJavascript(js, null));
+    }
+
+    private void sendLocationError(String reason) {
+        if (webView == null) return;
+        String safe = reason.replaceAll("[^a-z_]", "");
+        webView.post(() -> webView.evaluateJavascript(
+                "window.iFarmerLocationError && window.iFarmerLocationError('" + safe + "')", null));
+    }
 
     @JavascriptInterface
     public void shareApp() {
@@ -243,7 +310,12 @@ public class MainActivity extends Activity {
                 pendingGeoCallback = null;
                 pendingGeoOrigin = null;
             }
+            if (granted && pendingNativeCallback != null) {
+                String cb = pendingNativeCallback; pendingNativeCallback = null;
+                getCurrentLocation(cb);
+            }
             if (!granted) {
+                sendLocationError("permission");
                 Toast.makeText(this, "iFarmer-এর লোকেশন চালু করতে Location permission দিন", Toast.LENGTH_LONG).show();
             }
             requestNotificationPermission();
@@ -265,6 +337,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onDestroy() {
         if (filePathCallback != null) filePathCallback.onReceiveValue(null);
+        if (nativeLocationListener != null && locationManager != null) locationManager.removeUpdates(nativeLocationListener);
         if (webView != null) webView.destroy();
         super.onDestroy();
     }
