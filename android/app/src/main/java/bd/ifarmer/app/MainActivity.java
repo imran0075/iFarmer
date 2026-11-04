@@ -68,9 +68,18 @@ public class MainActivity extends Activity {
             }
             try {
                 locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-                boolean gps = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+                boolean fine = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+                boolean gps = fine && locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
                 boolean network = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-                if (!gps && !network) { sendLocationError("gps_off"); return; }
+                if (!gps && !network) {
+                    sendLocationError("gps_off");
+                    new AlertDialog.Builder(this)
+                        .setTitle("ফোনের Location বন্ধ")
+                        .setMessage("iFarmer-এ অবস্থান দেখাতে ফোনের Location/GPS চালু করুন।")
+                        .setPositiveButton("Location চালু করুন", (dialog, which) -> startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)))
+                        .setNegativeButton("পরে", null).show();
+                    return;
+                }
                 Location best = null;
                 if (gps) best = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
                 if (best == null && network) best = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
