@@ -37,8 +37,47 @@ DIAGNOSIS_TYPES = CROPS + LIVESTOCK_TYPES + ["অন্যান্য"]
 UNITS = {"একর":1.0,"শতক":0.01,"বিঘা":0.33,"হেক্টর":2.471}
 
 def shell(title, body):
-    return f"""<!doctype html><html lang="bn"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#176b45"><title>{title} · iFarmer</title><link rel="stylesheet" href="/static/style.css"><body><div id="google_translate_element" style="position:fixed;right:10px;top:10px;z-index:9999"></div>
-<script>function googleTranslateElementInit(){{new google.translate.TranslateElement({{pageLanguage:"bn",includedLanguages:"en,bn",autoDisplay:false}}, "google_translate_element");}}</script><script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+    return f"""<!doctype html><html lang="bn"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#176b45"><title>{title} · iFarmer</title><link rel="stylesheet" href="/static/style.css"><body><div id="google_translate_element" style="display:none"></div>
+<div class="language-switch" role="group" aria-label="Choose language"><button type="button" data-ifarmer-lang="en">ENG</button><span>|</span><button type="button" data-ifarmer-lang="bn">BAN</button></div>
+<style>
+.language-switch{{position:fixed;right:12px;top:12px;z-index:10001;display:flex;align-items:center;gap:5px;padding:6px 9px;background:#fff;border:1px solid #dce8df;border-radius:22px;box-shadow:0 3px 12px #0002;font:600 12px Arial,sans-serif}}
+.language-switch button{{border:0;background:transparent;color:#176b45;padding:5px 7px;border-radius:15px;font-weight:700;cursor:pointer}}
+.language-switch button.active{{background:#176b45;color:#fff}}
+body{{padding-top:0}}
+</style>
+<script>
+(function(){{
+  function setActive(lang){{
+    document.querySelectorAll('[data-ifarmer-lang]').forEach(function(b){{b.classList.toggle('active',b.getAttribute('data-ifarmer-lang')===lang);}});
+  }}
+  function chooseGoogleLanguage(lang,attempt){{
+    var combo=document.querySelector('.goog-te-combo');
+    if(combo){{
+      combo.value=lang;
+      combo.dispatchEvent(new Event('change',{{bubbles:true}}));
+      setActive(lang);
+      try{{localStorage.setItem('ifarmer_language',lang);}}catch(e){{}}
+      return;
+    }}
+    if(attempt<30)setTimeout(function(){{chooseGoogleLanguage(lang,attempt+1);}},300);
+  }}
+  document.addEventListener('click',function(e){{
+    var btn=e.target.closest('[data-ifarmer-lang]');
+    if(!btn)return;
+    chooseGoogleLanguage(btn.getAttribute('data-ifarmer-lang'),0);
+  }});
+  var saved='en';
+  try{{saved=localStorage.getItem('ifarmer_language')||'en';}}catch(e){{}}
+  setActive(saved);
+  window.googleTranslateElementInit=function(){{
+    new google.translate.TranslateElement({{pageLanguage:'bn',includedLanguages:'en,bn',autoDisplay:false}},'google_translate_element');
+    chooseGoogleLanguage(saved,0);
+  }};
+  var script=document.createElement('script');
+  script.src='https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+  script.async=true;document.head.appendChild(script);
+}})();
+</script>
 <header class="top"><a class="brand" href="/">🌱 iFarmer</a><nav><a href="/">হোম</a><a href="/agri">কৃষি সহায়ক</a></nav></header><main class="narrow section">{body}</main><footer><b>iFarmer</b><p>কৃষির ডিজিটাল সহযাত্রী</p></footer></body></html>"""
 
 @router.get("/agri", response_class=HTMLResponse)
