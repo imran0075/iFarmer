@@ -135,7 +135,7 @@ def esc(s):
     return html.escape(str(s or ""))
 
 def page(title, body, active=""):
-    return f"""<!doctype html><html lang="bn"><head><meta charset="utf-8">
+    return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#176b45"><title>{esc(title)} · iFarmer</title>
 <link rel="stylesheet" href="/static/style.css?v=20261103-premium-final-1"><meta name="color-scheme" content="light"></head><body>
@@ -175,6 +175,7 @@ body{{padding-top:0}}
       combo.dispatchEvent(new Event('change',{{bubbles:true}}));
       setActive(lang);
       try{{localStorage.setItem('ifarmer_language',lang);}}catch(e){{}}
+      document.documentElement.lang=lang;
       return;
     }}
     if(attempt<30)setTimeout(function(){{chooseGoogleLanguage(lang,attempt+1);}},300);
@@ -187,6 +188,7 @@ body{{padding-top:0}}
   var saved='en';
   try{{saved=localStorage.getItem('ifarmer_language')||'en';}}catch(e){{}}
   setActive(saved);
+  document.documentElement.lang=saved;
   window.googleTranslateElementInit=function(){{
     new google.translate.TranslateElement({{pageLanguage:'bn',includedLanguages:'en,bn',autoDisplay:false}},'google_translate_element');
     chooseGoogleLanguage(saved,0);
