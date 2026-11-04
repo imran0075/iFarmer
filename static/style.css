@@ -525,3 +525,10 @@ main{max-width:1200px}
 @media(prefers-reduced-motion:reduce){
  .quick-actions a,#agriculture .card,#services .card,#products .card{transition:none}
 }
+
+/* iFarmer Grow Smarter brand lockup */
+header.top .brand{display:inline-flex;align-items:center;gap:9px;flex:0 0 auto;text-decoration:none}
+header.top .brand .logo{display:grid;place-items:center;width:42px;height:42px;border-radius:14px;background:linear-gradient(145deg,#e8f4e9,#d5ead8);font-size:24px}
+header.top .brand .brand-copy{display:flex;flex-direction:column;align-items:flex-start;line-height:1.05}
+header.top .brand .brand-copy strong{font-size:20px;font-weight:900;letter-spacing:-.6px;color:#145536}
+header.top .brand .brand-copy small{margin-top:4px;font-size:8px;font-weight:850;letter-spacing:2px;color:#a1844e}
