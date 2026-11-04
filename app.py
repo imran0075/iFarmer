@@ -202,27 +202,12 @@ body{{padding-top:0}}
 <script>
 (function(){{
  function setupNativeShare(){{
-  var brand=document.querySelector('header.top .brand');
-  var lang=document.querySelector('.language-switch');
-  if(!window.iFarmerNative||!window.iFarmerNative.shareApp||!brand||document.getElementById('ifarmer-share-app'))return;
+  if(!window.iFarmerNative||!window.iFarmerNative.shareApp||document.getElementById('ifarmer-share-app'))return;
   var b=document.createElement('button');b.id='ifarmer-share-app';b.type='button';b.textContent='↗ শেয়ার';
   b.setAttribute('aria-label','iFarmer অ্যাপ শেয়ার করুন');
-  b.style.cssText='display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;margin:0 8px;padding:6px 11px;border:0;border-radius:18px;background:#176b45;color:#fff;font-weight:700;font-size:12px;vertical-align:middle;flex:0 0 auto';
+  b.style.cssText='position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:10003;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;margin:0;padding:5px 10px;border:0;border-radius:18px;background:#176b45;color:#fff;font-weight:700;font-size:12px;box-shadow:0 2px 8px #0002';
   b.onclick=function(){{window.iFarmerNative.shareApp();}};
-  brand.insertAdjacentElement('afterend',b);
-  if(lang){{
-    lang.style.position='static';lang.style.right='auto';lang.style.top='auto';
-    lang.style.display='inline-flex';lang.style.flex='0 0 auto';lang.style.margin='0 0 0 8px';
-    lang.style.boxShadow='none';lang.style.padding='4px 6px';
-    b.insertAdjacentElement('afterend',lang);
-  }}
-  var header=brand.closest('header.top');
-  if(header){{
-    header.style.display='flex';header.style.alignItems='center';
-    header.style.justifyContent='flex-start';header.style.flexWrap='nowrap';
-    header.style.gap='6px';header.style.width='100%';
-  }}
-  var nav=header&&header.querySelector('nav');if(nav)nav.style.display='';
+  document.body.appendChild(b);
  }}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setupNativeShare);else setupNativeShare();
  setTimeout(setupNativeShare,500);
