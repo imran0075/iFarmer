@@ -210,9 +210,19 @@ body{{padding-top:0}}
   b.style.cssText='display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;margin:0 8px;padding:6px 11px;border:0;border-radius:18px;background:#176b45;color:#fff;font-weight:700;font-size:12px;vertical-align:middle;flex:0 0 auto';
   b.onclick=function(){{window.iFarmerNative.shareApp();}};
   brand.insertAdjacentElement('afterend',b);
-  if(lang){{lang.style.position='static';lang.style.right='auto';lang.style.top='auto';lang.style.display='inline-flex';lang.style.flex='0 0 auto';lang.style.margin='0';lang.style.boxShadow='none';}}
+  if(lang){{
+    lang.style.position='static';lang.style.right='auto';lang.style.top='auto';
+    lang.style.display='inline-flex';lang.style.flex='0 0 auto';lang.style.margin='0 0 0 8px';
+    lang.style.boxShadow='none';lang.style.padding='4px 6px';
+    b.insertAdjacentElement('afterend',lang);
+  }}
   var header=brand.closest('header.top');
-  if(header){{header.style.display='flex';header.style.alignItems='center';header.style.justifyContent='space-between';header.style.flexWrap='nowrap';}}
+  if(header){{
+    header.style.display='flex';header.style.alignItems='center';
+    header.style.justifyContent='flex-start';header.style.flexWrap='nowrap';
+    header.style.gap='6px';header.style.width='100%';
+  }}
+  var nav=header&&header.querySelector('nav');if(nav)nav.style.display='none';
  }}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setupNativeShare);else setupNativeShare();
  setTimeout(setupNativeShare,500);
