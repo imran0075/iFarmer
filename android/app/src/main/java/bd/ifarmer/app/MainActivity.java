@@ -10,6 +10,7 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.GeolocationPermissions;
 import android.webkit.ValueCallback;
+import android.webkit.JavascriptInterface;
 import android.net.Uri;
 import android.content.Intent;
 import android.content.ClipData;
@@ -42,6 +43,16 @@ public class MainActivity extends Activity {
     private String pendingGeoOrigin;
     private boolean pendingCameraChooser;
 
+    @JavascriptInterface
+    public void shareApp() {
+        String url = "https://ifarmer.onrender.com/static/download.html";
+        Intent send = new Intent(Intent.ACTION_SEND);
+        send.setType("text/plain");
+        send.putExtra(Intent.EXTRA_SUBJECT, "iFarmer অ্যাপ");
+        send.putExtra(Intent.EXTRA_TEXT, "কৃষির ডিজিটাল সহযাত্রী iFarmer অ্যাপ ডাউনলোড করুন:\n" + url);
+        startActivity(Intent.createChooser(send, "iFarmer শেয়ার করুন"));
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -55,6 +66,7 @@ public class MainActivity extends Activity {
         webView.getSettings().setGeolocationEnabled(true);
         webView.getSettings().setAllowFileAccess(true);
         webView.getSettings().setSupportZoom(false);
+        webView.addJavascriptInterface(this, "iFarmerNative");
 
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
@@ -86,6 +98,11 @@ public class MainActivity extends Activity {
         });
 
         webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                view.evaluateJavascript("(function(){if(document.getElementById('ifarmer-share-app'))return;var b=document.createElement('button');b.id='ifarmer-share-app';b.type='button';b.textContent='↗ অ্যাপ শেয়ার করুন';b.setAttribute('aria-label','iFarmer অ্যাপ শেয়ার করুন');b.style.cssText='position:fixed;right:14px;bottom:78px;z-index:99999;border:0;border-radius:24px;padding:12px 17px;background:#176b45;color:white;font-weight:700;font-size:14px;box-shadow:0 4px 14px #0003';b.onclick=function(){if(window.iFarmerNative&&window.iFarmerNative.shareApp){window.iFarmerNative.shareApp()}else if(navigator.share){navigator.share({title:\\'iFarmer অ্যাপ\\',text:\\'কৃষির ডিজিটাল সহযাত্রী iFarmer অ্যাপ ডাউনলোড করুন\\',url:\\'https://ifarmer.onrender.com/static/download.html\\'}).catch(function(){})}};document.body.appendChild(b)})()", null);
+            }
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
