@@ -213,7 +213,7 @@ body{{padding-top:0}}
  setTimeout(setupNativeShare,500);
 }})();
 </script>
-<header class="top"><a class="brand" href="/" aria-label="iFarmer Grow Smarter"><span class="logo">🌱</span><span class="brand-copy"><strong>iFarmer</strong><small>GROW SMARTER</small></span></a>
+<header class="top"><a class="brand" href="/"><span class="logo">🌱</span><span>iFarmer</span></a>
 <nav><a href="/#products">পণ্য</a><a href="/#order">অর্ডার</a><a href="/track-order">অর্ডার ট্র্যাক</a><a href="/partner">পার্টনার হোন</a><a href="/partner/login">পার্টনার লগইন</a><a href="/agri">কৃষি সহায়ক</a><a href="/agri/category/fish">মৎস্য ও প্রাণিসম্পদ</a></nav></header>
 {body}
 <nav class="mobile-dock" aria-label="প্রধান মেনু"><a href="/">⌂<span>হোম</span></a><a href="/agri">🌱<span>কৃষি</span></a><a href="/#products">▦<span>পণ্য</span></a><a href="/partner/login">♙<span>প্রোফাইল</span></a></nav>
