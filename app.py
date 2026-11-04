@@ -203,12 +203,16 @@ body{{padding-top:0}}
 (function(){{
  function setupNativeShare(){{
   var brand=document.querySelector('header.top .brand');
+  var lang=document.querySelector('.language-switch');
   if(!window.iFarmerNative||!window.iFarmerNative.shareApp||!brand||document.getElementById('ifarmer-share-app'))return;
   var b=document.createElement('button');b.id='ifarmer-share-app';b.type='button';b.textContent='↗ শেয়ার';
   b.setAttribute('aria-label','iFarmer অ্যাপ শেয়ার করুন');
-  b.style.cssText='display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;margin:0 10px;padding:6px 11px;border:0;border-radius:18px;background:#176b45;color:#fff;font-weight:700;font-size:12px;vertical-align:middle';
+  b.style.cssText='display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;margin:0 8px;padding:6px 11px;border:0;border-radius:18px;background:#176b45;color:#fff;font-weight:700;font-size:12px;vertical-align:middle;flex:0 0 auto';
   b.onclick=function(){{window.iFarmerNative.shareApp();}};
   brand.insertAdjacentElement('afterend',b);
+  if(lang){{lang.style.position='static';lang.style.right='auto';lang.style.top='auto';lang.style.display='inline-flex';lang.style.flex='0 0 auto';lang.style.margin='0';lang.style.boxShadow='none';}}
+  var header=brand.closest('header.top');
+  if(header){{header.style.display='flex';header.style.alignItems='center';header.style.justifyContent='space-between';header.style.flexWrap='nowrap';}}
  }}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setupNativeShare);else setupNativeShare();
  setTimeout(setupNativeShare,500);
