@@ -46,6 +46,7 @@ public class MainActivity extends Activity {
     private GeolocationPermissions.Callback pendingGeoCallback;
     private String pendingGeoOrigin;
     private boolean pendingCameraChooser;
+    private boolean locationPermissionRequestActive;
 
     @JavascriptInterface
     public void shareApp() {
@@ -133,7 +134,11 @@ public class MainActivity extends Activity {
         if (savedInstanceState == null) webView.loadUrl(HOME);
         else webView.restoreState(savedInstanceState);
 
-        requestNotificationPermission();
+        if (!hasLocationPermission()) {
+            requestLocationPermission();
+        } else {
+            requestNotificationPermission();
+        }
         FirebaseMessaging.getInstance().subscribeToTopic("ifarmer_all");
     }
 
@@ -154,9 +159,11 @@ public class MainActivity extends Activity {
     }
 
     private void requestLocationPermission() {
+        if (hasLocationPermission() || locationPermissionRequestActive) return;
+        locationPermissionRequestActive = true;
         requestPermissions(new String[] {
-                android.Manifest.permission.ACCESS_FINE_LOCATION,
-                android.Manifest.permission.ACCESS_COARSE_LOCATION
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
         }, LOCATION_PERMISSION_REQUEST);
     }
 
@@ -228,14 +235,18 @@ public class MainActivity extends Activity {
                 Toast.makeText(this, "ক্যামেরার অনুমতি না দিলে গ্যালারি থেকে ছবি নিতে পারবেন", Toast.LENGTH_LONG).show();
             }
         }
-        if (requestCode == LOCATION_PERMISSION_REQUEST && pendingGeoCallback != null) {
+        if (requestCode == LOCATION_PERMISSION_REQUEST) {
+            locationPermissionRequestActive = false;
             boolean granted = hasLocationPermission();
-            pendingGeoCallback.invoke(pendingGeoOrigin, granted, false);
-            pendingGeoCallback = null;
-            pendingGeoOrigin = null;
-            if (!granted) {
-                Toast.makeText(this, "লোকেশন ব্যবহার করতে GPS অনুমতি দিন", Toast.LENGTH_LONG).show();
+            if (pendingGeoCallback != null) {
+                pendingGeoCallback.invoke(pendingGeoOrigin, granted, false);
+                pendingGeoCallback = null;
+                pendingGeoOrigin = null;
             }
+            if (!granted) {
+                Toast.makeText(this, "iFarmer-এর লোকেশন চালু করতে Location permission দিন", Toast.LENGTH_LONG).show();
+            }
+            requestNotificationPermission();
         }
     }
 
