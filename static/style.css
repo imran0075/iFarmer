@@ -407,3 +407,121 @@ footer{background:linear-gradient(115deg,#092d20,#104d31);border-top:4px solid #
  .home-hero{grid-template-columns:1.1fr .9fr}
  .quick-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+
+/* iFarmer premium visual system v2 */
+:root{
+  --if-forest:#103d2b;--if-leaf:#176b45;--if-mint:#eaf5ed;
+  --if-gold:#c7a66a;--if-ink:#172d22;--if-muted:#718278;
+}
+body{background:linear-gradient(180deg,#f7faf6 0%,#f4f8f3 48%,#fff 100%);color:var(--if-ink)}
+main{max-width:1200px}
+.home-hero{
+  position:relative;overflow:hidden;border:1px solid #dce9dd;border-radius:30px;
+  background:
+    radial-gradient(circle at 85% 18%,#d8eedb 0,transparent 30%),
+    radial-gradient(circle at 10% 100%,#e3f0df 0,transparent 35%),
+    linear-gradient(125deg,#fbfff9 0%,#edf7ed 52%,#e5f1e7 100%);
+  box-shadow:0 26px 70px #153f2818,inset 0 1px #ffffff;
+}
+.home-hero:before{
+  content:"";position:absolute;width:390px;height:390px;border:1px solid #b8d5bd;
+  border-radius:50%;right:-110px;top:-165px;opacity:.55;pointer-events:none
+}
+.home-hero:after{
+  content:"";position:absolute;width:270px;height:270px;border:1px solid #c7dec9;
+  border-radius:50%;right:-45px;top:-105px;opacity:.55;pointer-events:none
+}
+.home-hero .pill{
+  display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border-radius:30px;
+  background:#ffffffc9;border:1px solid #dceade;color:#256443;letter-spacing:.1px;
+  box-shadow:0 6px 18px #1c57300b
+}
+.home-hero h1{color:#123d2a;letter-spacing:-1.8px;line-height:1.12}
+.home-hero h1 span{
+  background:linear-gradient(95deg,#176b45,#68a36d);-webkit-background-clip:text;
+  background-clip:text;color:transparent
+}
+.home-hero .hero-copy>p{max-width:570px;color:#61756a;font-size:clamp(15px,1.5vw,18px);line-height:1.9}
+.home-hero .actions{gap:11px;margin-top:24px}
+.home-hero .actions .btn{min-height:49px;padding:0 21px;border-radius:15px;font-weight:850}
+.home-hero .actions .btn.primary{
+  background:linear-gradient(135deg,#1b7950,#105c3b);box-shadow:0 12px 24px #176b4533
+}
+.home-hero .actions .btn.light{background:#ffffffc9;border:1px solid #d6e5d8;color:#205a3d}
+.home-hero .hero-trust{color:#476c56}
+.hero-art{min-height:285px}
+.art-sun{
+  background:radial-gradient(circle at 35% 30%,#fff8dc,#e3edbd 50%,#b6d6aa 100%);
+  box-shadow:inset -16px -18px 36px #6b9b5722,0 24px 50px #356b3b20;
+  border:1px solid #ffffffb8
+}
+.art-leaf{filter:drop-shadow(0 22px 18px #17452d45);transform:rotate(-5deg)}
+.art-tag{
+  border:1px solid #ffffffd9;box-shadow:0 15px 35px #173d2522;
+  background:linear-gradient(135deg,#ffffffed,#f4faf1ed);padding:15px 20px
+}
+.quick-actions a{
+  position:relative;overflow:hidden;background:linear-gradient(145deg,#fff,#f8fbf7);
+  border:1px solid #e1ebe1;box-shadow:0 8px 24px #163b2709
+}
+.quick-actions a:after{
+  content:"";position:absolute;inset:auto -25px -45px auto;width:100px;height:100px;
+  border-radius:50%;background:#e9f4e9;opacity:.7;pointer-events:none
+}
+.quick-actions a span{background:linear-gradient(145deg,#e8f4e9,#d7ead9);color:#176b45}
+.quick-actions b,.quick-actions small{position:relative;z-index:1}
+.home-stats{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px
+}
+.home-stats>div{
+  border:1px solid #e3ece3;border-radius:18px;background:#ffffffc9;
+  box-shadow:0 8px 24px #183e2708;padding:14px 17px
+}
+.home-stats b{color:#1b6844}
+.home-stats span{color:#65776c}
+.section{scroll-margin-top:90px}
+.section-head{align-items:end}
+.section-head h2{color:#153e2c;letter-spacing:-.6px}
+.eyebrow{color:#9a7b42;font-weight:850;letter-spacing:1.5px}
+#agriculture .card,#services .card,#products .card{
+  border:1px solid #e3ece4;border-radius:22px;background:linear-gradient(155deg,#fff,#fbfdfb);
+  box-shadow:0 12px 34px #173e280b;transition:transform .2s ease,box-shadow .2s ease
+}
+#agriculture .card:hover,#services .card:hover,#products .card:hover{
+  transform:translateY(-4px);box-shadow:0 20px 44px #173e2816
+}
+#agriculture .card-icon,#services .card-icon{
+  width:54px;height:54px;border-radius:17px;display:grid;place-items:center;
+  background:linear-gradient(145deg,#eaf5eb,#d8ead9);font-size:27px
+}
+#products .product-photo{width:100%;height:210px;object-fit:contain;background:#f6faf5;border-radius:16px;padding:10px}
+#products .card h3{color:#173e2c;font-size:17px;line-height:1.45}
+#products .card .fine{color:#7a897f}
+#products .card .btn{border-radius:13px;min-height:44px}
+.order-section>.form{border:1px solid #e0eae1;box-shadow:0 18px 50px #153d2712}
+.order-section .form input,.order-section .form select{min-height:48px;background:#fff}
+.partner-banner{
+  border-radius:25px;border:1px solid #286b4a;
+  box-shadow:0 22px 50px #0d4a2b28;padding:clamp(24px,4vw,42px)
+}
+.partner-banner h2{letter-spacing:-.7px}
+.partner-banner .btn{border-radius:14px;min-height:48px;padding:0 22px}
+#ifarmer-install-web .btn{border-radius:14px;min-height:48px;box-shadow:0 12px 24px #176b4528}
+@media(max-width:700px){
+ .home-hero{border-radius:23px;margin:8px 0 15px;padding:23px 18px 10px}
+ .home-hero h1{letter-spacing:-1.2px}
+ .home-hero .hero-copy>p{font-size:14px;line-height:1.8}
+ .home-hero .actions{display:grid;grid-template-columns:1fr 1fr}
+ .home-hero .actions .btn{padding:0 9px;font-size:12px}
+ .hero-art{min-height:132px}
+ .art-tag{font-size:12px}
+ .home-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .home-stats>div{min-height:60px;padding:10px 11px;border-radius:15px}
+ .section-head{gap:7px}
+ #products .product-photo{height:155px}
+ .partner-banner{border-radius:21px;gap:16px}
+}
+@media(prefers-reduced-motion:reduce){
+ .quick-actions a,#agriculture .card,#services .card,#products .card{transition:none}
+}
