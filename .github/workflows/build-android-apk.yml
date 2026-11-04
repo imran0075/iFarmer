@@ -34,6 +34,8 @@ jobs:
       - name: Build debug APK
         working-directory: android
         run: gradle assembleDebug
+      - name: Rename APK for stable download link
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk iFarmer.apk
       - name: Publish APK as a GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -42,6 +44,6 @@ jobs:
           body: |
             iFarmer Android app release.
             Download iFarmer.apk and install it on your Android phone.
-          files: android/app/build/outputs/apk/debug/app-debug.apk
+          files: iFarmer.apk
           fail_on_unmatched_files: true
           make_latest: true
