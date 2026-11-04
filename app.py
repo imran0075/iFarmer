@@ -199,6 +199,21 @@ body{{padding-top:0}}
 }})();
 </script>
 
+<script>
+(function(){{
+  function setupNativeShare(){{
+    if(!window.iFarmerNative || !window.iFarmerNative.shareApp || document.getElementById('ifarmer-share-app')) return;
+    var b=document.createElement('button');
+    b.id='ifarmer-share-app'; b.type='button'; b.textContent='↗ শেয়ার';
+    b.setAttribute('aria-label','iFarmer অ্যাপ শেয়ার করুন');
+    b.style.cssText='position:fixed;left:50%;transform:translateX(-50%);top:58px;z-index:10002;border:0;border-radius:18px;padding:6px 12px;background:#176b45;color:#fff;font-weight:700;font-size:12px;box-shadow:0 2px 8px #0002';
+    b.onclick=function(){{window.iFarmerNative.shareApp();}};
+    document.body.appendChild(b);
+  }}
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',setupNativeShare); else setupNativeShare();
+  setTimeout(setupNativeShare,500);
+}})();
+</script>
 <header class="top"><a class="brand" href="/"><span class="logo">🌱</span><span>iFarmer</span></a>
 <nav><a href="/#products">পণ্য</a><a href="/#order">অর্ডার</a><a href="/track-order">অর্ডার ট্র্যাক</a><a href="/partner">পার্টনার হোন</a><a href="/partner/login">পার্টনার লগইন</a><a href="/agri">কৃষি সহায়ক</a><a href="/agri/category/fish">মৎস্য ও প্রাণিসম্পদ</a></nav></header>
 {body}
@@ -254,6 +269,14 @@ def home(request: Request):
 
 <div class="hero-art" aria-hidden="true"><div class="art-sun"></div><div class="art-leaf">🌾</div><div class="art-tag">iFarmer<br><small>Grow smarter</small></div></div>
 </section>
+<section class="section" id="ifarmer-install-web" aria-label="iFarmer Android অ্যাপ ইনস্টল">
+<a class="btn primary" style="display:block;text-align:center;max-width:320px;margin:0 auto" href="https://github.com/imran0075/iFarmer/releases/latest/download/iFarmer.apk" download>অ্যাপ ইনস্টল করুন</a>
+</section>
+<script>
+(function(){{
+  if(window.iFarmerNative){{var s=document.getElementById('ifarmer-install-web');if(s)s.remove();}}
+}})();
+</script>
 <section class="quick-actions" aria-label="দ্রুত সেবা">
 <a href="/agri/weather"><span>🌦️</span><b>আবহাওয়া</b><small>এলাকার পূর্বাভাস</small></a>
 <a href="/agri/fertilizer"><span>🧮</span><b>সার হিসাব</b><small>মাত্রা নির্ণয়</small></a>
