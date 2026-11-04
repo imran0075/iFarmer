@@ -19,6 +19,10 @@ import android.provider.MediaStore;
 import android.graphics.Color;
 import android.view.View;
 import android.widget.Toast;
+import android.widget.Button;
+import android.widget.FrameLayout;
+import android.view.Gravity;
+import android.view.ViewGroup;
 import com.google.firebase.messaging.FirebaseMessaging;
 
 import androidx.core.content.ContextCompat;
@@ -123,7 +127,21 @@ public class MainActivity extends Activity {
             }
         });
 
-        setContentView(webView);
+        FrameLayout root = new FrameLayout(this);
+        root.addView(webView, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        Button shareButton = new Button(this);
+        shareButton.setText("↗ অ্যাপ শেয়ার করুন");
+        shareButton.setAllCaps(false);
+        shareButton.setTextColor(Color.WHITE);
+        shareButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(23, 107, 69)));
+        shareButton.setOnClickListener(v -> shareApp());
+        FrameLayout.LayoutParams shareParams = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
+                Gravity.BOTTOM | Gravity.END);
+        shareParams.setMargins(0, 0, 28, 90);
+        root.addView(shareButton, shareParams);
+        setContentView(root);
         if (savedInstanceState == null) webView.loadUrl(HOME);
         else webView.restoreState(savedInstanceState);
 
