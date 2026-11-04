@@ -37,7 +37,7 @@ DIAGNOSIS_TYPES = CROPS + LIVESTOCK_TYPES + ["অন্যান্য"]
 UNITS = {"একর":1.0,"শতক":0.01,"বিঘা":0.33,"হেক্টর":2.471}
 
 def shell(title, body):
-    return f"""<!doctype html><html lang="bn"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#176b45"><title>{title} · iFarmer</title><link rel="stylesheet" href="/static/style.css"><body><div id="google_translate_element" style="display:none"></div>
+    return f"""<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#176b45"><title>{title} · iFarmer</title><link rel="stylesheet" href="/static/style.css"><body><div id="google_translate_element" style="display:none"></div>
 <div class="language-switch" role="group" aria-label="Choose language"><button type="button" data-ifarmer-lang="en">ENG</button><span>|</span><button type="button" data-ifarmer-lang="bn">BAN</button></div>
 <style>
 .language-switch{{position:fixed;right:12px;top:12px;z-index:10001;display:flex;align-items:center;gap:5px;padding:6px 9px;background:#fff;border:1px solid #dce8df;border-radius:22px;box-shadow:0 3px 12px #0002;font:600 12px Arial,sans-serif}}
@@ -57,6 +57,7 @@ body{{padding-top:0}}
       combo.dispatchEvent(new Event('change',{{bubbles:true}}));
       setActive(lang);
       try{{localStorage.setItem('ifarmer_language',lang);}}catch(e){{}}
+      document.documentElement.lang=lang;
       return;
     }}
     if(attempt<30)setTimeout(function(){{chooseGoogleLanguage(lang,attempt+1);}},300);
@@ -69,6 +70,7 @@ body{{padding-top:0}}
   var saved='en';
   try{{saved=localStorage.getItem('ifarmer_language')||'en';}}catch(e){{}}
   setActive(saved);
+  document.documentElement.lang=saved;
   window.googleTranslateElementInit=function(){{
     new google.translate.TranslateElement({{pageLanguage:'bn',includedLanguages:'en,bn',autoDisplay:false}},'google_translate_element');
     chooseGoogleLanguage(saved,0);
