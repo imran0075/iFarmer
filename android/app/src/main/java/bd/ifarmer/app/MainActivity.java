@@ -47,7 +47,6 @@ public class MainActivity extends Activity {
     private String pendingGeoOrigin;
     private boolean pendingCameraChooser;
     private boolean locationPermissionRequestActive;
-    private boolean locationPermissionRequestActive;
 
     @JavascriptInterface
     public void shareApp() {
