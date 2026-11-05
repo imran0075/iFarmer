@@ -38,6 +38,12 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 public class MainActivity extends Activity {
     private static final String HOME = "https://ifarmer.onrender.com/";
@@ -126,6 +132,81 @@ public class MainActivity extends Activity {
                 "window.iFarmerLocationError && window.iFarmerLocationError('" + safe + "')", null));
     }
 
+
+    private void checkForAppUpdate() {
+        new Thread(() -> {
+            HttpURLConnection connection = null;
+            try {
+                URL url = new URL("https://api.github.com/repos/imran0075/iFarmer/releases/latest");
+                connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("GET");
+                connection.setConnectTimeout(10000);
+                connection.setReadTimeout(10000);
+                connection.setRequestProperty("Accept", "application/vnd.github+json");
+                connection.setRequestProperty("User-Agent", "iFarmer-Android-App");
+                if (connection.getResponseCode() != 200) return;
+                StringBuilder response = new StringBuilder();
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(connection.getInputStream(), "UTF-8"))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) response.append(line);
+                }
+                JSONObject release = new JSONObject(response.toString());
+                String latestTag = release.optString("tag_name", "").replaceFirst("^[vV]", "");
+                String downloadUrl = "";
+                JSONArray assets = release.optJSONArray("assets");
+                if (assets != null) {
+                    for (int i = 0; i < assets.length(); i++) {
+                        JSONObject asset = assets.optJSONObject(i);
+                        if (asset != null && "iFarmer.apk".equals(asset.optString("name"))) {
+                            downloadUrl = asset.optString("browser_download_url", "");
+                            break;
+                        }
+                    }
+                }
+                String installedVersion = getPackageManager()
+                        .getPackageInfo(getPackageName(), 0).versionName;
+                if (!latestTag.isEmpty() && !downloadUrl.isEmpty()
+                        && compareVersions(latestTag, installedVersion) > 0) {
+                    final String link = downloadUrl;
+                    runOnUiThread(() -> {
+                        if (isFinishing() || isDestroyed()) return;
+                        new AlertDialog.Builder(this)
+                                .setTitle("iFarmer-এর নতুন আপডেট")
+                                .setMessage("নতুন ভার্সন " + latestTag + " পাওয়া গেছে। অ্যাপটি আপডেট করলে নতুন সুবিধা ও সংশোধন পাবেন।")
+                                .setPositiveButton("আপডেট ডাউনলোড", (dialog, which) -> {
+                                    try {
+                                        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(link)));
+                                    } catch (Exception e) {
+                                        Toast.makeText(this, "ডাউনলোড লিংক খোলা যাচ্ছে না", Toast.LENGTH_LONG).show();
+                                    }
+                                })
+                                .setNegativeButton("পরে", null)
+                                .show();
+                    });
+                }
+            } catch (Exception ignored) {
+                // Update checks are optional; keep the app usable when offline.
+            } finally {
+                if (connection != null) connection.disconnect();
+            }
+        }).start();
+    }
+
+    private int compareVersions(String first, String second) {
+        try {
+            String[] a = first.split("\\.");
+            String[] b = second.replaceFirst("^[vV]", "").split("\\.");
+            int count = Math.max(a.length, b.length);
+            for (int i = 0; i < count; i++) {
+                int x = i < a.length ? Integer.parseInt(a[i].replaceAll("[^0-9].*$", "")) : 0;
+                int y = i < b.length ? Integer.parseInt(b[i].replaceAll("[^0-9].*$", "")) : 0;
+                if (x != y) return Integer.compare(x, y);
+            }
+        } catch (Exception ignored) {}
+        return 0;
+    }
+
     @JavascriptInterface
     public void shareApp() {
         String url = "https://ifarmer.onrender.com/static/download.html";
@@ -211,6 +292,7 @@ public class MainActivity extends Activity {
         setContentView(root);
         if (savedInstanceState == null) webView.loadUrl(HOME);
         else webView.restoreState(savedInstanceState);
+        webView.postDelayed(this::checkForAppUpdate, 5000);
 
         if (!hasLocationPermission()) {
             requestLocationPermission();
