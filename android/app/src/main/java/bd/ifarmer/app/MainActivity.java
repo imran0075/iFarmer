@@ -164,10 +164,14 @@ public class MainActivity extends Activity {
                         }
                     }
                 }
-                String installedVersion = getPackageManager()
-                        .getPackageInfo(getPackageName(), 0).versionName;
+                android.content.pm.PackageInfo packageInfo =
+                        getPackageManager().getPackageInfo(getPackageName(), 0);
+                long installedVersionCode = Build.VERSION.SDK_INT >= 28
+                        ? packageInfo.getLongVersionCode() : packageInfo.versionCode;
+                String[] tagParts = latestTag.split("\\.");
+                long latestVersionCode = Long.parseLong(tagParts[tagParts.length - 1]);
                 if (!latestTag.isEmpty() && !downloadUrl.isEmpty()
-                        && compareVersions(latestTag, installedVersion) > 0) {
+                        && latestVersionCode > installedVersionCode) {
                     final String link = downloadUrl;
                     runOnUiThread(() -> {
                         if (isFinishing() || isDestroyed()) return;
@@ -191,20 +195,6 @@ public class MainActivity extends Activity {
                 if (connection != null) connection.disconnect();
             }
         }).start();
-    }
-
-    private int compareVersions(String first, String second) {
-        try {
-            String[] a = first.split("\\.");
-            String[] b = second.replaceFirst("^[vV]", "").split("\\.");
-            int count = Math.max(a.length, b.length);
-            for (int i = 0; i < count; i++) {
-                int x = i < a.length ? Integer.parseInt(a[i].replaceAll("[^0-9].*$", "")) : 0;
-                int y = i < b.length ? Integer.parseInt(b[i].replaceAll("[^0-9].*$", "")) : 0;
-                if (x != y) return Integer.compare(x, y);
-            }
-        } catch (Exception ignored) {}
-        return 0;
     }
 
     @JavascriptInterface
