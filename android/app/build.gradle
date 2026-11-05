@@ -7,12 +7,14 @@ android {
     namespace 'bd.ifarmer.app'
     compileSdk 35
 
+    def releaseNumber = (System.getenv('GITHUB_RUN_NUMBER') ?: '5').toInteger()
+
     defaultConfig {
         applicationId 'bd.ifarmer.app'
         minSdk 23
         targetSdk 35
-        versionCode 4
-        versionName '1.3'
+        versionCode releaseNumber
+        versionName "1.0.${releaseNumber}"
     }
 
     signingConfigs {
