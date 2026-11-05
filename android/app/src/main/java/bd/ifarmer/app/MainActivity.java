@@ -255,6 +255,15 @@ public class MainActivity extends Activity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
+                // Center text only inside the Android app's WebView; website CSS remains unchanged.
+                String centerTextCss = "(() => {"
+                        + "var style = document.getElementById('ifarmer-android-center-text');"
+                        + "if (!style) { style = document.createElement('style');"
+                        + "style.id = 'ifarmer-android-center-text';"
+                        + "(document.head || document.documentElement).appendChild(style); }"
+                        + "style.textContent = 'body, body * { text-align: center !important; }';"
+                        + "})();";
+                view.evaluateJavascript(centerTextCss, null);
             }
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
