@@ -261,7 +261,7 @@ public class MainActivity extends Activity {
                         + "if (!style) { style = document.createElement('style');"
                         + "style.id = 'ifarmer-android-center-text';"
                         + "(document.head || document.documentElement).appendChild(style); }"
-                        + "style.textContent = 'body :is(p,h1,h2,h3,h4,h5,h6,td,th,label,.card-title,.card-text,.section-title,.page-title,.form-label,.alert,.empty-state):not(nav *):not([role="navigation"] *):not(.navbar *):not(.bottom-nav *):not(.mobile-nav *):not(.menu-bar *):not(.tab-bar *) { text-align: center !important; }';"
+                        + "style.textContent = 'body :is(p,h1,h2,h3,h4,h5,h6,td,th,label,.card-title,.card-text,.section-title,.page-title,.form-label,.alert,.empty-state):not(nav *):not(.navbar *):not(.bottom-nav *):not(.mobile-nav *):not(.menu-bar *):not(.tab-bar *) { text-align: center !important; }';"
                         + "})();";
                 view.evaluateJavascript(centerTextCss, null);
             }
