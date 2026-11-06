@@ -336,10 +336,15 @@ async def diagnose_submit(photo: UploadFile=File(...)):
         text_answer = answer.replace("\\r", "\\n")
         text_answer = re.sub(r"(?m)^\\s*#{1,3}\\s*", "", text_answer)
         labels = [
-            ("সনাক্তকরণ", "১. সনাক্তকরণ"),
-            ("রোগ নির্ণয়", "২. রোগ নির্ণয়"),
-            ("সমাধান", "৩. সমাধান"),
-            ("প্রতিকার ও প্রতিরোধ", "৪. প্রতিকার ও প্রতিরোধ"),
+            ("ফসল ও সমস্যা", "১. ফসল ও সমস্যা"),
+            ("এখন করণীয়", "২. এখন করণীয়"),
+            ("কীটনাশকের সক্রিয় উপাদান", "৩. কীটনাশকের সক্রিয় উপাদান"),
+            ("সতর্কতা", "৪. সতর্কতা"),
+            # Accept older headings returned by previous prompt versions too.
+            ("সনাক্তকরণ", "১. ফসল ও সমস্যা"),
+            ("রোগ নির্ণয়", "১. ফসল ও সমস্যা"),
+            ("সমাধান", "২. এখন করণীয়"),
+            ("প্রতিকার ও প্রতিরোধ", "৪. সতর্কতা"),
         ]
         # Split on section labels whether they occur on separate lines or inline.
         for label, numbered in labels:
@@ -352,9 +357,9 @@ async def diagnose_submit(photo: UploadFile=File(...)):
                 content = parts[i+1].strip() if i+1 < len(parts) else ""
                 sections.append((heading, content))
         else:
-            # Fallback: keep the AI response under clear, explicit section headings.
-            sections = [(heading, "এই অংশের বিস্তারিত তথ্য AI-এর উত্তরে আলাদা করে পাওয়া যায়নি।\n\n" + text_answer.strip()) for _, heading in labels]
-        heading_colors = {"১. সনাক্তকরণ":"#16803c", "২. রোগ নির্ণয়":"#b76a00", "৩. সমাধান":"#2563eb", "৪. প্রতিকার ও প্রতিরোধ":"#7c3aed"}
+            # If the model omits headings, show its response once rather than duplicating it.
+            sections = [("AI বিশ্লেষণ", text_answer.strip())]
+        heading_colors = {"১. ফসল ও সমস্যা":"#16803c", "২. এখন করণীয়":"#b76a00", "৩. কীটনাশকের সক্রিয় উপাদান":"#2563eb", "৪. সতর্কতা":"#7c3aed"}
         rendered = []
         for heading, content in sections:
             color = heading_colors.get(heading, "#176b45")
