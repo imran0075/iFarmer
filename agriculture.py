@@ -300,8 +300,21 @@ def diagnose_form():
     <script>
     (function(){
       const form=document.getElementById('ai-diagnose-form'), cam=document.getElementById('ai-camera'), preview=document.getElementById('ai-preview'), img=document.getElementById('ai-preview-img'), status=document.getElementById('ai-status'), btn=document.getElementById('ai-submit');
-      cam.addEventListener('change',()=>{const file=cam.files&&cam.files[0];if(!file)return;preview.style.display='block';img.src=URL.createObjectURL(file);status.textContent='ছবি প্রস্তুত। বিশ্লেষণ করতে বাটনে চাপ দিন।';});
-      form.addEventListener('submit',()=>{if(!cam.files.length){status.textContent='আগে ক্যামেরা দিয়ে ছবি তুলুন।';return;}btn.disabled=true;btn.textContent='AI ছবি বিশ্লেষণ করছে…';status.textContent='ছবি বিশ্লেষণ হচ্ছে। অনুগ্রহ করে অপেক্ষা করুন; ১ মিনিট পর্যন্ত লাগতে পারে।';});
+      let autoSubmitTimer=null;
+      cam.addEventListener('change',()=>{
+        const file=cam.files&&cam.files[0];if(!file)return;
+        if(!/^image\\/(jpeg|png|webp)$/.test(file.type)){status.textContent='JPG, PNG অথবা WebP ছবি তুলুন।';cam.value='';return;}
+        preview.style.display='block';img.src=URL.createObjectURL(file);
+        status.textContent='ছবি পাওয়া গেছে। স্বয়ংক্রিয়ভাবে বিশ্লেষণ শুরু হচ্ছে…';
+        if(autoSubmitTimer)clearTimeout(autoSubmitTimer);
+        autoSubmitTimer=setTimeout(()=>{if(cam.files&&cam.files.length)form.requestSubmit();},700);
+      });
+      form.addEventListener('submit',(event)=>{
+        if(!cam.files.length){event.preventDefault();status.textContent='আগে ক্যামেরা দিয়ে ছবি তুলুন।';return;}
+        btn.disabled=true;btn.textContent='AI বিশ্লেষণ চলছে…';
+        status.textContent='ছবির রোগ-পোকা, লক্ষণ ও করণীয় বিশ্লেষণ হচ্ছে। অনুগ্রহ করে অপেক্ষা করুন; প্রায় ১ মিনিট লাগতে পারে।';
+      });
+
     })();
     </script>
     <p class="fine">কোনো ফসল, জেলা বা লক্ষণ লিখতে হবে না। AI ছবির দৃশ্যমান তথ্য থেকে সম্ভাব্য ফসল, রোগ/পোকা ও ব্যবস্থাপনা শনাক্ত করবে। প্রয়োজন হলে কীটনাশকের সক্রিয় উপাদান জানাবে; নিবন্ধন ও লেবেল যাচাই ছাড়া ব্র্যান্ড বা ডোজ অনুমান করবে না। AI-এর ফলাফল সম্ভাব্য মূল্যায়ন, নিশ্চিত রোগনির্ণয় নয়।</p>""")
