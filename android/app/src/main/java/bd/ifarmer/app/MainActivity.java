@@ -62,6 +62,8 @@ public class MainActivity extends Activity {
     private LocationManager locationManager;
     private LocationListener nativeLocationListener;
     private String pendingNativeCallback;
+    private int renderRetryCount = 0;
+    private boolean renderRetryScheduled = false;
 
     @JavascriptInterface
     public void getCurrentLocation(String callbackName) {
@@ -255,6 +257,26 @@ public class MainActivity extends Activity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
+                // Render free-tier wake-up page can finish loading before the real app is ready.
+                // Detect it and retry automatically so users do not get stuck on the Render splash.
+                view.evaluateJavascript("(() => { const t = (document.body && document.body.innerText || '').toUpperCase(); return t.includes('APPLICATION LOADING') || t.includes('YOUR APP IS ALMOST LIVE') || t.includes('RENDER FOR FREE'); })()", result -> {
+                    boolean renderLoading = "true".equals(result);
+                    if (renderLoading && renderRetryCount < 12 && !renderRetryScheduled) {
+                        renderRetryCount++;
+                        renderRetryScheduled = true;
+                        view.postDelayed(() -> {
+                            renderRetryScheduled = false;
+                            if (!isFinishing() && view == webView
+                                    && view.getUrl() != null
+                                    && view.getUrl().startsWith(HOME)) {
+                                view.reload();
+                            }
+                        }, 10000);
+                    } else if (!renderLoading) {
+                        renderRetryCount = 0;
+                        renderRetryScheduled = false;
+                    }
+                });
                 // Center text only inside the Android app's WebView; website CSS remains unchanged.
                 String centerTextCss = "(() => {"
                         + "var style = document.getElementById('ifarmer-android-center-text');"
