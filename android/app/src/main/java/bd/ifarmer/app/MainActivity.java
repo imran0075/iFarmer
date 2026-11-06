@@ -349,42 +349,38 @@ public class MainActivity extends Activity {
     }
 
     private void openImagePicker(boolean includeCamera) {
+        // For capture="environment", launch the rear camera directly.
+        // Fall back to the image picker only if the device has no working camera app.
+        if (includeCamera) {
+            try {
+                File cameraDir = new File(getCacheDir(), "camera");
+                if (!cameraDir.exists()) cameraDir.mkdirs();
+                String fileName = "ifarmer_" +
+                        new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(new Date()) + ".jpg";
+                File photoFile = new File(cameraDir, fileName);
+                cameraPhotoUri = FileProvider.getUriForFile(this,
+                        getPackageName() + ".fileprovider", photoFile);
+                Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, cameraPhotoUri);
+                cameraIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                cameraIntent.setClipData(ClipData.newUri(getContentResolver(), "iFarmer camera photo", cameraPhotoUri));
+                startActivityForResult(cameraIntent, FILE_CHOOSER_REQUEST);
+                return;
+            } catch (Exception cameraError) {
+                cameraPhotoUri = null;
+            }
+        }
         Intent galleryIntent = new Intent(Intent.ACTION_GET_CONTENT);
         galleryIntent.setType("image/*");
         galleryIntent.addCategory(Intent.CATEGORY_OPENABLE);
-
-        Intent cameraIntent = null;
         try {
-            if (!includeCamera) throw new SecurityException("Camera permission not granted");
-            File cameraDir = new File(getCacheDir(), "camera");
-            if (!cameraDir.exists()) cameraDir.mkdirs();
-            String fileName = "ifarmer_" +
-                    new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(new Date()) + ".jpg";
-            File photoFile = new File(cameraDir, fileName);
-            cameraPhotoUri = FileProvider.getUriForFile(this,
-                    getPackageName() + ".fileprovider", photoFile);
-
-            cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-            cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, cameraPhotoUri);
-            cameraIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
-                    | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-            cameraIntent.setClipData(ClipData.newUri(getContentResolver(), "iFarmer camera photo", cameraPhotoUri));
-        } catch (Exception e) {
-            cameraPhotoUri = null;
-        }
-
-        Intent chooser = Intent.createChooser(galleryIntent, "ছবি নির্বাচন করুন");
-        if (cameraIntent != null) {
-            chooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[] { cameraIntent });
-            chooser.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-            chooser.setClipData(ClipData.newUri(getContentResolver(), "iFarmer camera photo", cameraPhotoUri));
-        }
-        try {
-            startActivityForResult(chooser, FILE_CHOOSER_REQUEST);
+            startActivityForResult(Intent.createChooser(galleryIntent, "ছবি নির্বাচন করুন"), FILE_CHOOSER_REQUEST);
         } catch (Exception e) {
             if (filePathCallback != null) filePathCallback.onReceiveValue(null);
             filePathCallback = null;
-            Toast.makeText(this, "ছবি নির্বাচন করা যাচ্ছে না", Toast.LENGTH_SHORT).show();
+            cameraPhotoUri = null;
+            Toast.makeText(this, "ক্যামেরা বা ছবি নির্বাচন চালু করা যাচ্ছে না", Toast.LENGTH_SHORT).show();
         }
     }
 
